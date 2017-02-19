@@ -8,18 +8,26 @@
 #define IS_ENDING(c) (c == '\n' || c == '\r')
 #define ATOI(c)     (c - '0')
 
+#define STATE_ERROR 1
+
 GCODE_PARAM params[8];
 uint8_t current_parameter;
 TARGET next_target;
 
+// Parser is implemented as a finite state automata (DFA)
+// This is pointer holds function with actions expected for current progress, each of these functions
+// changes its value on state change
 uint8_t (*current_state)(uint8_t c);
 
+//a few state functions prototypes
 uint8_t start_parsing_parameter(uint8_t );
-uint8_t start_parse_number(uint8_t);
+uint8_t start_parsing_number(uint8_t);
 
 
 /// convert a floating point input value into an integer with appropriate scaling.
-/// \param *df pointer to floating point structure that holds fp value to convert
+/// \param mantissa the actual digits of our floating point number
+/// \param exponent scale mantissa by \f$10^{-exponent}\f$
+/// \param sign  positive or negative?
 /// \param multiplicand multiply by this amount during conversion to integer
 ///
 /// Tested for up to 42'000 mm (accurate), 420'000 mm (precision 10 um) and
@@ -65,7 +73,7 @@ void parser_init()
     next_target.f_multiplier = 256;
     parser_reset();
 }
-
+// this function executes command after is parsed
 void process_command()
 {
     for(int i = 1; i <= current_parameter; ++i)
@@ -100,11 +108,12 @@ void process_command()
     }
 }
 
-uint8_t gcode_error(uint8_t c)
+
+uint8_t gcode_syntax_error(uint8_t c)
 {
     if IS_ENDING(c)
         parser_reset();
-    return 1;
+    return STATE_ERROR;
 }
 
 uint8_t start_parsing_parameter(uint8_t c)
@@ -120,11 +129,11 @@ uint8_t start_parsing_parameter(uint8_t c)
     if IS_LETTER(c)
     {
         params[current_parameter].name = c;
-        current_state = start_parse_number;
+        current_state = start_parsing_number;
         return 0;
     }
-    current_state = gcode_error;
-    return 1;
+    current_state = gcode_syntax_error;
+    return STATE_ERROR;
 }
 
 uint8_t parse_digit(uint8_t c)
@@ -161,11 +170,11 @@ uint8_t parse_digit(uint8_t c)
         return 0;
     }
     
-    current_state = gcode_error;
-    return 1;
+    current_state = gcode_syntax_error;
+    return STATE_ERROR;
 }
 
-uint8_t start_parse_number(uint8_t c)
+uint8_t start_parsing_number(uint8_t c)
 {
     current_state = parse_digit;
     //negative number
@@ -179,8 +188,8 @@ uint8_t start_parse_number(uint8_t c)
         parse_digit(c);
         return 0;
     }
-    current_state = gcode_error;
-    return 1;
+    current_state = gcode_syntax_error;
+    return STATE_ERROR;
 }
 
 uint8_t gcode_parse_char(uint8_t c) {
@@ -192,7 +201,7 @@ uint8_t gcode_parse_char(uint8_t c) {
     
     if IS_ENDING(c)
     {
-        if ( result == 1) //error
+        if ( result == STATE_ERROR) //error
             return 2;
         return 1;
     }

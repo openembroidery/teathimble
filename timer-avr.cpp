@@ -15,9 +15,12 @@
 
 #include	"config.h"
 #include "pinio.h"
-//#include "clock.h"
-//#include "cpu.h"
-//#include "memory_barrier.h"
+
+/** \def MOTHERBOARD
+  This is the motherboard, as opposed to the extruder. See extruder/ directory
+  for GEN3 extruder firmware.
+*/
+#define MOTHERBOARD
 
 #ifdef	MOTHERBOARD
 #include	"queue.h"

@@ -154,7 +154,6 @@
 
 #define ENCODER_PIN 17
 
-
 #define PWR_OUT1_PIN 18
 #define PWR_OUT2_PIN 19
 #define ANALOG_IN_PIN 33
@@ -180,12 +179,6 @@
 #define F_CPU                    16000000UL
 #endif
 
-/** \def MOTHERBOARD
-  This is the motherboard, as opposed to the extruder. See extruder/ directory
-  for GEN3 extruder firmware.
-*/
-#define MOTHERBOARD
-
 /** \def DEBUG_LED_PIN
 
   Enable flashing of a LED during motor stepping.
@@ -197,6 +190,7 @@
   http://reprap.org/wiki/Teacup_Firmware#Doing_precision_profiling
 */
 #define DEBUG_LED_PIN            PC1
+
 ////////////////DEBUG/////////////////////
 #define SIMINFO
 #define DEBUG

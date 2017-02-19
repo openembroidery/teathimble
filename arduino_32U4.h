@@ -9,8 +9,8 @@
 //#define RXD1         DIO7
 //#define TXD1         DIO8
 
-// ATmega32U4 doesn't have a serial port 0, maybe its a USB?
-// do some munging of port 0 to port 1 the help serial.c
+
+// do some munging of serial port 
 #define UCSR0A       UCSRA
 #define U2X0         U2X
 #define UBRR0        UBRRL

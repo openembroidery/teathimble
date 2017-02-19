@@ -4,7 +4,6 @@
 #include "config.h"
 
 #include <stdint.h>
-
 #include "motor.h"
 
 
