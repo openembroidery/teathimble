@@ -68,8 +68,14 @@ void parser_reset()
 
 void parser_init()
 {
+#ifdef STEPS_PER_M_Z
     next_target.F = SEARCH_FEEDRATE_Z;
+#else
+    next_target.F = SEARCH_FEEDRATE_Y;    
+#endif
+#ifdef STEPS_PER_M_E
     next_target.e_multiplier = 256;
+#endif
     next_target.f_multiplier = 256;
     parser_reset();
 }
@@ -100,9 +106,8 @@ void process_command()
         case 'M':
             //114
             update_current_position();
-            sersendf_P(PSTR("X:%lq,Y:%lq,Z:%lq,E:%lq,F:%lu\n"),
+            sersendf_P(PSTR("X:%lq,Y:%lq,F:%lu\n"),
                     current_position.axis[X], current_position.axis[Y],
-                    current_position.axis[Z], current_position.axis[E],
                             current_position.F);
         break;
     }

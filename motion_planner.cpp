@@ -31,9 +31,13 @@
 /// \brief maximum allowed feedrate jerk on each axis
 static const axes_uint32_t PROGMEM maximum_jerk_P = {
   MAX_JERK_X,
-  MAX_JERK_Y,
-  MAX_JERK_Z,
-  MAX_JERK_E
+  MAX_JERK_Y
+  #ifdef MAX_JERK_Z
+    ,MAX_JERK_Z
+  #endif
+  #ifdef MAX_JERK_E
+    ,MAX_JERK_E
+  #endif
 };
 
 
@@ -82,9 +86,9 @@ void dda_find_crossing_speed(DDA *prev, DDA *current) {
   }
 
   if (DEBUG_DDA && (debug_flags & DEBUG_DDA))
-    sersendf_P(PSTR("prevF: %ld  %ld  %ld  %ld\ncurrF: %ld  %ld  %ld  %ld\n"),
-               prevF[X], prevF[Y], prevF[Z], prevF[E],
-               currF[X], currF[Y], currF[Z], currF[E]);
+    sersendf_P(PSTR("prevF: %ld  %ld \ncurrF: %ld  %ld\n"),
+               prevF[X], prevF[Y], 
+               currF[X], currF[Y]);
 
   /**
    * What we want is (for each axis):

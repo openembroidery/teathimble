@@ -7,7 +7,14 @@
 
 
 // Enum to denote an axis
-enum axis_e { X = 0, Y, Z, E, AXIS_COUNT };
+enum axis_e { X = 0, Y,
+#ifdef STEPS_PER_M_Z
+    Z, 
+#endif
+#ifdef STEPS_PER_M_E
+    E,
+#endif
+    AXIS_COUNT };
 
 /**
   \typedef axes_uint32_t
@@ -35,9 +42,11 @@ typedef struct {
   axes_int32_t axis;
   uint32_t  F;
 
-  uint16_t  e_multiplier;
   uint16_t  f_multiplier;
+#ifdef STEPS_PER_M_E
+  uint16_t  e_multiplier;
   uint8_t   e_relative        :1; ///< bool: e axis relative? Overrides all_relative
+#endif
 } TARGET;
 
 /**
@@ -59,7 +68,10 @@ typedef struct {
 
 	/// Endstop handling.
   uint8_t endstop_stop; ///< Stop due to endstop trigger
-  uint8_t debounce_count_x, debounce_count_y, debounce_count_z;
+  uint8_t debounce_count_x, debounce_count_y;
+#ifdef STEPS_PER_M_Z
+  uint8_t debounce_count_z;
+#endif
 } MOVE_STATE;
 
 /**
@@ -81,7 +93,7 @@ typedef struct {
       uint8_t           done          :1; ///< bool: this DDA is done.
 
 			// wait for temperature to stabilise flag
-			uint8_t						waitfor_temp	:1; ///< bool: wait for temperatures to reach their set values
+			uint8_t						waitfor	:1; ///< bool: wait for something
 
 			// directions
       // As we have muldiv() now, overflows became much less an issue and
@@ -89,8 +101,12 @@ typedef struct {
       // uint for distance/speed calculations. --Traumflug 2014-07-04
 			uint8_t						x_direction		:1; ///< direction flag for X axis
 			uint8_t						y_direction		:1; ///< direction flag for Y axis
+#ifdef STEPS_PER_M_Z
 			uint8_t						z_direction		:1; ///< direction flag for Z axis
+#endif
+#ifdef STEPS_PER_M_E
 			uint8_t						e_direction		:1; ///< direction flag for E axis
+#endif
 		};
     uint16_t            allflags; ///< used for clearing all flags
 	};
@@ -182,16 +198,25 @@ void dda_clock(void);
 // update current_position
 void update_current_position(void);
 
+// Sanity: E axis must be enabled along with Z
+#if ! defined STEPS_PER_M_Z && defined STEPS_PER_M_E 
+#error Your config.h does specify STEPS_PER_M_E without STEPS_PER_M_Z
+#endif
+
 /*********************PLANNER*********************/
 #ifdef LOOKAHEAD
 
 // Sanity: make sure the defines are in place
-#if ! defined MAX_JERK_X || ! defined MAX_JERK_Y || \
-    ! defined MAX_JERK_Z || ! defined MAX_JERK_E
+#if ! defined MAX_JERK_X || ! defined MAX_JERK_Y
 #error Your config.h does not specify one of MAX_JERK_X,
-#error MAX_JERK_Y, MAX_JERK_Z or MAX_JERK_E while LOOKAHEAD is enabled!
+#error MAX_JERK_Y while LOOKAHEAD is enabled!
 #endif
 
+#if ! defined MAX_JERK_Z && defined STEPS_PER_M_Z || \
+    ! defined MAX_JERK_E && defined STEPS_PER_M_E
+#error Your config.h does not specify one or both of MAX_JERK_Z or
+#error MAX_JERK_E while LOOKAHEAD and STEPS_PER_M_Z or STEPS_PER_M_E is enabled!
+#endif
 // Sanity: the acceleration of Teacup is not implemented properly; as such we can only
 // do move joining when all axis use the same steps per mm. This is usually not an issue
 // for X and Y.

@@ -35,25 +35,25 @@
 
 #define STEPS_PER_M_X            1280000
 #define STEPS_PER_M_Y            1280000
-#define STEPS_PER_M_Z            1280000
+/*#define STEPS_PER_M_Z            1280000
 #define STEPS_PER_M_E            96271
-
+*/
 /** \def SEARCH_FEEDRATE_X SEARCH_FEEDRATE_Y SEARCH_FEEDRATE_Z
   Used when doing precision endstop search and as default feedrate. 
   (mm / min)  60 mm / min = 1 mm/sec
 */
 #define SEARCH_FEEDRATE_X        400
 #define SEARCH_FEEDRATE_Y        400
-#define SEARCH_FEEDRATE_Z        400
+//#define SEARCH_FEEDRATE_Z        400
 
 /** \def MAXIMUM_FEEDRATE_X MAXIMUM_FEEDRATE_Y MAXIMUM_FEEDRATE_Z MAXIMUM_FEEDRATE_E
   Used for G0 rapid moves and as a cap for all other feedrates. (mm / min) 
 */
 #define MAXIMUM_FEEDRATE_X       6000
 #define MAXIMUM_FEEDRATE_Y       6000
-#define MAXIMUM_FEEDRATE_Z       6000
+/*#define MAXIMUM_FEEDRATE_Z       6000
 #define MAXIMUM_FEEDRATE_E       20000
-
+*/
 /** \def ACCELERATION
   How fast to accelerate when using ACCELERATION_RAMPING. Start with 10 for
   milling (high precision) or 1000 for printing.
@@ -94,8 +94,8 @@
 */
 #define MAX_JERK_X               80
 #define MAX_JERK_Y               80
-#define MAX_JERK_Z               0
-#define MAX_JERK_E               200
+/*#define MAX_JERK_Z               0
+#define MAX_JERK_E               200*/
 
 
 /** \def BAUD
@@ -136,7 +136,7 @@
 #define Y_INVERT_MAX
 #define Y_INVERT_ENABLE
 
-#define Z_STEP_PIN               DIO11
+/*#define Z_STEP_PIN               DIO11
 #define Z_DIR_PIN                DIO12
 #define Z_MIN_PIN                DIO13
 #define Z_MAX_PIN                DIO14
@@ -151,6 +151,7 @@
 #define E_ENABLE_PIN             DIO22
 #define E_INVERT_DIR
 #define E_INVERT_ENABLE
+*/
 
 #define ENCODER_PIN 17
 
@@ -193,7 +194,7 @@
 
 ////////////////DEBUG/////////////////////
 #define SIMINFO
-#define DEBUG
+#define DEBUG 1
 
 #ifdef  DEBUG
   #define DEBUG_ECHO       1
@@ -206,11 +207,11 @@
 #else
     // by setting these to zero, the compiler should optimise the relevant code out
     #define     DEBUG_PID           0
-    #define     DEBUG_DDA           1
-    #define     DEBUG_POSITION      1
-    #define     DEBUG_ECHO          1
-  #define DEBUG_INFO                1
-  #define DEBUG_DRYRUN              1
+    #define     DEBUG_DDA           0
+    #define     DEBUG_POSITION      0
+    #define     DEBUG_ECHO          0
+  #define DEBUG_INFO                0
+  #define DEBUG_DRYRUN              0
 #endif
 extern volatile uint8_t debug_flags;
 

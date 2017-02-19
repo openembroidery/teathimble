@@ -32,18 +32,26 @@ TARGET BSS startpoint_steps;
 /// \brief motor steps required to advance one meter on each axis
 static const axes_uint32_t PROGMEM steps_per_m_P = {
   STEPS_PER_M_X,
-  STEPS_PER_M_Y,
-  STEPS_PER_M_Z,
-  STEPS_PER_M_E
+  STEPS_PER_M_Y
+  #ifdef STEPS_PER_M_Z
+    ,STEPS_PER_M_Z
+  #endif
+  #ifdef STEPS_PER_M_E
+    ,STEPS_PER_M_E
+  #endif
 };
 
 /// \var maximum_feedrate_P
 /// \brief maximum allowed feedrate on each axis
 static const axes_uint32_t PROGMEM maximum_feedrate_P = {
   MAXIMUM_FEEDRATE_X,
-  MAXIMUM_FEEDRATE_Y,
-  MAXIMUM_FEEDRATE_Z,
-  MAXIMUM_FEEDRATE_E
+  MAXIMUM_FEEDRATE_Y
+  #ifdef MAXIMUM_FEEDRATE_Z
+    ,MAXIMUM_FEEDRATE_Z
+  #endif
+  #ifdef MAXIMUM_FEEDRATE_E
+    ,MAXIMUM_FEEDRATE_E
+  #endif
 };
 
 /// \var current_position
@@ -60,9 +68,13 @@ MOVE_STATE BSS move_state;
 ///        first step interval.
 static const axes_uint32_t PROGMEM c0_P = {
   (uint32_t)((double)F_CPU / SQRT((double)STEPS_PER_M_X * ACCELERATION / 2000.)),
-  (uint32_t)((double)F_CPU / SQRT((double)STEPS_PER_M_Y * ACCELERATION / 2000.)),
-  (uint32_t)((double)F_CPU / SQRT((double)STEPS_PER_M_Z * ACCELERATION / 2000.)),
-  (uint32_t)((double)F_CPU / SQRT((double)STEPS_PER_M_E * ACCELERATION / 2000.))
+  (uint32_t)((double)F_CPU / SQRT((double)STEPS_PER_M_Y * ACCELERATION / 2000.))
+  #ifdef STEPS_PER_M_Z
+  ,(uint32_t)((double)F_CPU / SQRT((double)STEPS_PER_M_Z * ACCELERATION / 2000.))
+  #endif
+  #ifdef STEPS_PER_M_E
+  ,(uint32_t)((double)F_CPU / SQRT((double)STEPS_PER_M_E * ACCELERATION / 2000.))
+  #endif
 };
 
 /*! Inititalise DDA movement structures
@@ -70,9 +82,11 @@ static const axes_uint32_t PROGMEM c0_P = {
 void dda_init(void) {
     // set up default feedrate
     if (startpoint.F == 0)
-        startpoint.F = SEARCH_FEEDRATE_Z;
-  if (startpoint.e_multiplier == 0)
+        startpoint.F = SEARCH_FEEDRATE_Y;
+  #ifdef STEPS_PER_M_E
+    if (startpoint.e_multiplier == 0)
     startpoint.e_multiplier =  256;
+#endif
   if (startpoint.f_multiplier == 0)
     startpoint.f_multiplier = 256;
 }
@@ -86,19 +100,28 @@ static void set_direction(DDA *dda, uint8_t n, int32_t delta) {
     dda->x_direction = dir;
   else if (n == Y)
     dda->y_direction = dir;
+#ifdef STEPS_PER_M_Z
   else if (n == Z)
     dda->z_direction = dir;
+#endif
+#ifdef STEPS_PER_M_E
   else if (n == E)
     dda->e_direction = dir;
+#endif
 }
 
 /*! Find the direction of the 'n' axis
 */
 static int8_t get_direction(DDA *dda, uint8_t n) {
   if ((n == X && dda->x_direction) ||
-      (n == Y && dda->y_direction) ||
-      (n == Z && dda->z_direction) ||
-      (n == E && dda->e_direction))
+      (n == Y && dda->y_direction) 
+#ifdef STEPS_PER_M_Z
+      || (n == Z && dda->z_direction) 
+#endif
+#ifdef STEPS_PER_M_E
+      || (n == E && dda->e_direction)
+#endif
+    )
     return 1;
   else
     return -1;
@@ -114,20 +137,25 @@ void dda_create(DDA *dda, const TARGET *target) {
   static uint8_t idcnt = 0;
   static DDA* prev_dda = NULL;
 
-  if ((prev_dda && prev_dda->done) || dda->waitfor_temp)
+  if ((prev_dda && prev_dda->done) || dda->waitfor)
     prev_dda = NULL;
   #endif
 
-  if (dda->waitfor_temp)
+  if (dda->waitfor)
     return;
 
   // We end at the passed target.
   memcpy(&(dda->endpoint), target, sizeof(TARGET));
-
+#ifdef STEPS_PER_M_Z
     if (DEBUG_DDA && (debug_flags & DEBUG_DDA))
-    sersendf_P(PSTR("\nCreate: X %lq  Y %lq  Z %lq  F %lu\n"),
+        sersendf_P(PSTR("\nCreate: X %lq  Y %lq  Z %lq  F %lu\n"),
                dda->endpoint.axis[X], dda->endpoint.axis[Y],
-               dda->endpoint.axis[Z], dda->endpoint.F);
+               dda->endpoint.axis[Z], dda->endpoint.F );
+#else
+    sersendf_P(PSTR("\nCreate: X %lq  Y %lq  F %lu\n"),
+               dda->endpoint.axis[X], dda->endpoint.axis[Y], dda->endpoint.F );
+#endif
+             
 
   // Apply feedrate multiplier.
   if (dda->endpoint.f_multiplier != 256) {
@@ -148,7 +176,11 @@ void dda_create(DDA *dda, const TARGET *target) {
 
   // Handle bot axes. They're subject to kinematics considerations.
   code_axes_to_stepper_axes(&startpoint, target, delta_um, steps);
-  for (i = X; i < E; i++) {
+#ifdef STEPS_PER_M_Z
+  for (i = X; i <= Z; i++) {
+#else
+  for (i = X; i <= Y; i++) {
+#endif
     int32_t delta_steps;
 
     delta_steps = steps[i] - startpoint_steps.axis[i];
@@ -173,6 +205,7 @@ void dda_create(DDA *dda, const TARGET *target) {
     #endif
   }
 
+#ifdef STEPS_PER_M_E
   // Handle extruder axes. They act independently from the bots kinematics
   // type, but are subject to other special handling.
   steps[E] = um_to_steps(target->axis[E], E);
@@ -213,11 +246,21 @@ void dda_create(DDA *dda, const TARGET *target) {
     #endif
     dda->e_direction = (target->axis[E] >= 0)?1:0;
     }
-
+#endif
     if (DEBUG_DDA && (debug_flags & DEBUG_DDA))
     sersendf_P(PSTR("[%ld,%ld,%ld,%ld]"),
                target->axis[X] - startpoint.axis[X], target->axis[Y] - startpoint.axis[Y],
-               target->axis[Z] - startpoint.axis[Z], target->axis[E] - startpoint.axis[E]);
+             #ifdef STEPS_PER_M_Z
+               target->axis[Z] - startpoint.axis[Z], 
+             #else
+               0,
+             #endif
+             #ifdef STEPS_PER_M_E
+               target->axis[E] - startpoint.axis[E]
+             #else
+               0
+             #endif
+              );
 
   // Admittedly, this looks like it's overcomplicated. Why store three 32-bit
   // values if storing an axis number would be fully sufficient? Well, I'm not
@@ -245,9 +288,13 @@ void dda_create(DDA *dda, const TARGET *target) {
         stepper_enable();
         x_enable();
         y_enable();
-
+#ifdef STEPS_PER_M_Z
+        z_enable();
+#endif
+#ifdef STEPS_PER_M_E
         e_enable();
-
+#endif
+#ifdef STEPS_PER_M_Z
         // since it's unusual to combine X, Y and Z changes in a single move on reprap, check if we can use simpler approximations before trying the full 3d approximation.
         if (delta_um[Z] == 0)
             distance = approx_distance(delta_um[X], delta_um[Y]);
@@ -255,10 +302,13 @@ void dda_create(DDA *dda, const TARGET *target) {
             distance = delta_um[Z];
         else
             distance = approx_distance_3(delta_um[X], delta_um[Y], delta_um[Z]);
-
+    #ifdef STEPS_PER_M_E
         if (distance < 2)
             distance = delta_um[E];
-
+    #endif
+#else
+        distance = approx_distance(delta_um[X], delta_um[Y]);
+#endif
         if (DEBUG_DDA && (debug_flags & DEBUG_DDA))
             sersendf_P(PSTR(",ds:%lu"), distance);
 
@@ -351,9 +401,15 @@ void dda_start(DDA *dda) {
     // called from interrupt context: keep it simple!
 
   if (DEBUG_DDA && (debug_flags & DEBUG_DDA))
-    sersendf_P(PSTR("Start: X %lq  Y %lq  Z %lq  F %lu\n"),
+    #ifdef STEPS_PER_M_Z
+        sersendf_P(PSTR("Start: X %lq  Y %lq  Z %lq  F %lu\n"),
                dda->endpoint.axis[X], dda->endpoint.axis[Y],
-               dda->endpoint.axis[Z], dda->endpoint.F);
+               dda->endpoint.axis[Z], dda->endpoint.F);        
+    #else
+        sersendf_P(PSTR("Start: X %lq  Y %lq  F %lu\n"),
+               dda->endpoint.axis[X], dda->endpoint.axis[Y],dda->endpoint.F);        
+    #endif
+               
 
     if ( ! dda->nullmove) {
         // get ready to go
@@ -365,12 +421,22 @@ void dda_start(DDA *dda) {
         // set direction outputs
         x_direction(dda->x_direction);
         y_direction(dda->y_direction);
+        #ifdef STEPS_PER_M_Z
         z_direction(dda->z_direction);
+        #endif
+        #ifdef STEPS_PER_M_E
         e_direction(dda->e_direction);
-
+        #endif
+        
         // initialise state variable
-        move_state.counter[X] = move_state.counter[Y] = move_state.counter[Z] = \
-        move_state.counter[E] = -(dda->total_steps >> 1);
+        move_state.counter[X] = move_state.counter[Y] =  
+        #ifdef STEPS_PER_M_Z
+        move_state.counter[Z] = 
+        #endif
+        #ifdef STEPS_PER_M_E
+        move_state.counter[E] = 
+        #endif
+        -(dda->total_steps >> 1);
         memcpy(&move_state.steps[X], &dda->delta[X], sizeof(uint32_t) * 4);
         move_state.endstop_stop = 0;
         
@@ -406,6 +472,26 @@ void dda_step(DDA *dda) {
         }
     }
 
+#ifdef STEPS_PER_M_Z
+if (move_state.steps[Z]) {
+    move_state.counter[Z] -= dda->delta[Z];
+    if (move_state.counter[Z] < 0) {
+            x_step();
+      move_state.steps[Z]--;
+      move_state.counter[Z] += dda->total_steps;
+        }
+    }
+#endif
+#ifdef STEPS_PER_M_E
+if (move_state.steps[E]) {
+    move_state.counter[E] -= dda->delta[E];
+    if (move_state.counter[E] < 0) {
+            x_step();
+      move_state.steps[E]--;
+      move_state.counter[E] += dda->total_steps;
+        }
+    }
+#endif
         move_state.step_no++;
 
 
@@ -414,10 +500,14 @@ void dda_step(DDA *dda) {
   //
   // TODO: with ACCELERATION_TEMPORAL this duplicates some code. See where
   //       dda->live is zero'd, about 10 lines above.
-  if ((move_state.steps[X] == 0 && move_state.steps[Y] == 0 &&
-       move_state.steps[Z] == 0 && move_state.steps[E] == 0)
-
-      || (move_state.endstop_stop && dda->n <= 0)) {
+  if ((move_state.steps[X] == 0 && move_state.steps[Y] == 0 
+    #ifdef STEPS_PER_M_Z 
+        && move_state.steps[Z] == 0 
+    #endif
+    #ifdef STEPS_PER_M_E
+        && move_state.steps[E] == 0
+    #endif
+      )  || (move_state.endstop_stop && dda->n <= 0)) {
         dda->live = 0;
         dda->done = 1;
         #ifdef LOOKAHEAD
@@ -453,8 +543,11 @@ void dda_clock() {
   dda = queue_current_movement();
   if (dda != last_dda) {
     move_state.debounce_count_x =
+    move_state.debounce_count_y =
+    #ifdef STEPS_PER_M_Z
     move_state.debounce_count_z =
-    move_state.debounce_count_y = 0;
+    #endif
+    0;
     last_dda = dda;
   }
 
@@ -562,9 +655,13 @@ void update_current_position() {
   // (STEPS_PER_M_X / 1000) is a bit inaccurate for low STEPS_PER_M numbers.
   static const axes_uint32_t PROGMEM steps_per_mm_P = {
     ((STEPS_PER_M_X + 500) / 1000),
-    ((STEPS_PER_M_Y + 500) / 1000),
-    ((STEPS_PER_M_Z + 500) / 1000),
-    ((STEPS_PER_M_E + 500) / 1000)
+    ((STEPS_PER_M_Y + 500) / 1000)
+    #ifdef STEPS_PER_M_Z
+    ,((STEPS_PER_M_Z + 500) / 1000)
+    #endif
+    #ifdef STEPS_PER_M_E
+    ,((STEPS_PER_M_E + 500) / 1000)
+    #endif
   };
 
     if (queue_empty()) {
@@ -582,11 +679,11 @@ void update_current_position() {
           // Also keep the parens around this term, else results go wrong.
           ((move_state.steps[i] * 1000) / pgm_read_dword(&steps_per_mm_P[i]));
     }
-
+#ifdef STEPS_PER_M_E
     if (dda->endpoint.e_relative)
       current_position.axis[E] =
           (move_state.steps[E] * 1000) / pgm_read_dword(&steps_per_mm_P[E]);
-
+#endif
         // current_position.F is updated in dda_start()
     }
 }

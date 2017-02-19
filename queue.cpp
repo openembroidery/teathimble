@@ -42,7 +42,7 @@ DDA *queue_current_movement() {
   ATOMIC_START
     current = &movebuffer[mb_tail];
 
-    if ( ! current->live || current->waitfor_temp || current->nullmove)
+    if ( ! current->live || current->waitfor || current->nullmove)
       current = NULL;
   ATOMIC_END
 
@@ -71,7 +71,7 @@ void enqueue_home(TARGET *t, uint8_t endstop_check, uint8_t endstop_stop_cond) {
         }
         else {
             // it's a wait for temp
-            new_movebuffer->waitfor_temp = 1;
+            new_movebuffer->waitfor = 1;
         }
     dda_create(new_movebuffer, t);
 
