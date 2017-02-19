@@ -1,0 +1,6 @@
+*.d
+*.o
+*.gz
+*.tar
+*.elf
+*swp
