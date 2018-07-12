@@ -299,6 +299,12 @@ pins
 // The PWM 
 
 // Port A isn't defined
+#undef PA5
+#define PA5_PIN      PINA5
+#define PA5_RPORT    PINA
+#define PA5_WPORT    PORTA
+#define PA5_PWM      NULL
+#define PA5_DDR      DDRA
 
 // Port B is fully available
 #undef PB0

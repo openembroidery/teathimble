@@ -35,6 +35,17 @@ uint8_t queue_empty() {
     return result;
 }
 
+/// dump queue for emergency stop.
+/// Make sure to have all timers stopped with timer_stop() or
+/// unexpected things might happen.
+/// \todo effect on startpoint is undefined!
+void queue_flush() {
+  // if the timer were running, this would require
+  // wrapping in ATOMIC_START ... ATOMIC_END.
+  mb_tail = mb_head;
+  movebuffer[mb_head].live = 0;
+}
+
 
 DDA *queue_current_movement() {
   DDA* current;
@@ -70,7 +81,7 @@ void enqueue_home(TARGET *t, uint8_t endstop_check, uint8_t endstop_stop_cond) {
             new_movebuffer->endstop_stop_cond = endstop_stop_cond;
         }
         else {
-            // it's a wait for temp
+            // it's a wait for something
             new_movebuffer->waitfor = 1;
         }
     dda_create(new_movebuffer, t);

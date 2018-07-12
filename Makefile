@@ -1,77 +1,72 @@
-OBJECTS=main.o error.o init.o lexer.o parser.o symbol.o 
+# This makefile for now is used to build executable for simavr for debbuging.
+# Click & forget arduino IDE should deal with mcu flashing.
+
+# MCU ?= atmega168
+# MCU ?= atmega328p
+#MCU ?= atmega644
+# MCU ?= atmega644
+# MCU ?= atmega1284p
+# MCU ?= atmega1280
+# MCU ?= atmega2560
+# MCU ?= at90usb1286
+ MCU ?= atmega32
+
+# CPU clock rate
+# F_CPU ?= 8000000L
+F_CPU ?= 16000000L
+# F_CPU ?= 20000000L
+
+ARDUINO_CORE = /usr/share/arduino/hardware/arduino/avr/cores/MightyCore
+ARDUINO_VARIANT = /usr/share/arduino/hardware/arduino/avr/variants/mega32
+
+#avr gcc
+CC = avr-gcc 
+#avr objeccopy
+OBJCOPY = avr-objcopy
+
+CFLAGS = -w -std=gnu++11 -Os -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -DF_CPU=16000000L -I$(ARDUINO_CORE) -I$(ARDUINO_VARIANT)
+
+CFLAGS += -mmcu=$(MCU)
+SIMULFLAGS = -Wl,--section-start=.siminfo=0x900000
+
+#debug?
+CFLAGS += -g
+
+OBJFLAG = -O ihex
 
 
-elf:
-	avr-g++ -c -g -Os -w -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics  -w -x c++ -M -MG -MP -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 motor_control.ino
+EXECUTABLE = teathimble
+SOURCES = ${wildcard *.cpp $(ARDUINO_CORE)/main.cpp $(ARDUINO_CORE)/wiring.c $(ARDUINO_CORE)/hooks.c}
+HEADERS = ${wildcard *.h}
+OBJECTS = ${SOURCES:.c=.o}
 
-	avr-g++ -c -g -Os -w -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics  -w -x c++ -M -MG -MP -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 motor_control.ino
+.PHONY: all
+all: ${EXECUTABLE}
 
-	avr-g++ -c -g -Os -w -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics  -w -x c++ -M -MG -MP -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 motor_control.ino
+$(EXECUTABLE): $(OBJECTS) buildnumber.num
+	$(CC) $(CFLAGS)  $(SIMULFLAGS) -o $(EXECUTABLE).elf $(OBJECTS) -lm
+	$(OBJCOPY) $(OBJFLAG) -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0 $(EXECUTABLE).elf $(EXECUTABLE).eep
 
-	avr-g++ -c -g -Os -w -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics  -w -x c++ -M -MG -MP -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 motor_control.ino
+	$(OBJCOPY) $(OBJFLAG) -R .eeprom  $(EXECUTABLE).elf $(EXECUTABLE).hex
+	@echo "-- Build: " $$(cat buildnumber.num)
 
-	avr-g++ -c -g -Os -w -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics  -w -x c++ -M -MG -MP -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 debug.cpp
+depend: $(SOURCES)
+	@echo "calling depend"
+	$(CC) $(CFLAGS) -Os -c -MM $^ > $@
 
-	avr-g++ -c -g -Os -w -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics  -w -x c++ -M -MG -MP -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 gcode_parser.cpp
+-include depend
 
-	avr-g++ -c -g -Os -w -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics  -w -x c++ -M -MG -MP -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 kinematics.cpp
+# Buildnumber administratie
+buildnumber.num: $(OBJECTS)
+	@if ! test -f buildnumber.num; then echo 0 > buildnumber.num; fi
+	@echo $$(($$(cat buildnumber.num)+1)) > buildnumber.num
 
-	avr-g++ -c -g -Os -w -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics  -w -x c++ -M -MG -MP -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 maths.cpp
+# Create a clean environment
+.PHONY: clean
+clean:
+	$(RM) $(EXECUTABLE)
 
-	avr-g++ -c -g -Os -w -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics  -w -x c++ -M -MG -MP -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 motor.cpp
-
-	avr-g++ -c -g -Os -w -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics  -w -x c++ -M -MG -MP -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 motor_control.ino
-
-	avr-g++ -c -g -Os -w -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics  -w -x c++ -M -MG -MP -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 msg.cpp
-
-	avr-g++ -c -g -Os -w -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics  -w -x c++ -M -MG -MP -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 pinio.cpp
-
-	avr-g++ -c -g -Os -w -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics  -w -x c++ -M -MG -MP -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 queue.cpp
-
-	avr-g++ -c -g -Os -w -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics  -w -x c++ -M -MG -MP -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 serial.cpp
-
-	avr-g++ -c -g -Os -w -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics  -w -x c++ -M -MG -MP -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 timer-avr.cpp
-
-	avr-g++ -c -g -Os -w -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics  -w -x c++ -E -CC -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 motor_control.ino
-	
-	avr-g++ -c -g -Os -Wall -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 debug.cpp -o debug.cpp.o
-	
-	avr-g++ -c -g -Os -Wall -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 gcode_parser.cpp -o gcode_parser.cpp.o
-
-	avr-g++ -c -g -Os -Wall -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 kinematics.cpp -o kinematics.cpp.o
-
-	avr-g++ -c -g -Os -Wall -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 maths.cpp -o maths.cpp.o
-
-	avr-g++ -c -g -Os -Wall -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 motor.cpp -o motor.cpp.o
-
-	avr-g++ -c -g -Os -Wall -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 motor_control.ino -o motor_control.ino.o
-
-	avr-g++ -c -g -Os -Wall -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 msg.cpp -o msg.cpp.o
-
-	avr-g++ -c -g -Os -Wall -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 pinio.cpp -o pinio.cpp.o
-
-
-	avr-g++ -c -g -Os -Wall -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 queue.cpp -o queue.cpp.o
-	
-	avr-g++ -c -g -Os -Wall -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 serial.cpp -o serial.cpp.o
-
-	avr-g++ -c -g -Os -Wall -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 timer-avr.cpp -o timer-avr.cpp.o
-
-	avr-g++ -c -g -Os -Wall -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 motor_control.ino.cpp -o motor_control.ino.cpp.o
-	
-	avr-g++ -c -g -Os -Wall -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 motion_planner.cpp -o motion_planner.cpp.o
-	
-	avr-g++ -c -g -Os -Wall -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 /usr/share/arduino/hardware/arduino/avr/cores/MightyCore/main.cpp -o main.cpp.o
-	
-	avr-g++ -c -g -Os -Wall -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 /usr/share/arduino/hardware/arduino/avr/cores/MightyCore/wiring.c -o wiring.o
-	
-	avr-gcc -c -g -Os -Wall -std=gnu++11 -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -MMD -mmcu=atmega32 -DF_CPU=16000000L -DARDUINO=10606 -DARDUINO_AVR_ATmega32 -DARDUINO_ARCH_AVR   -I/usr/share/arduino/hardware/arduino/avr/cores/MightyCore -I/usr/share/arduino/hardware/arduino/avr/variants/mega32 /usr/share/arduino/hardware/arduino/avr/cores/MightyCore/hooks.c -o hooks.o
-	
-	#avr-gcc -Wall -Os -Wl,--gc-sections -mmcu=atmega32  -o motor_control.ino.elf debug.cpp.o gcode_parser.cpp.o kinematics.cpp.o maths.cpp.o motor.cpp.o motor_control.ino.cpp.o msg.cpp.o pinio.cpp.o queue.cpp.o serial.cpp.o timer-avr.cpp.o motion_planner.cpp.o main.cpp.o wiring.o hooks.o -lm -Wl,--section-start=.siminfo=0x900000
-	
-	avr-gcc -Wall -Os -Wl,--section-start=.siminfo=0x900000 -mmcu=atmega32  -o motor_control.ino.elf debug.cpp.o gcode_parser.cpp.o kinematics.cpp.o maths.cpp.o motor.cpp.o motor_control.ino.cpp.o msg.cpp.o pinio.cpp.o queue.cpp.o serial.cpp.o timer-avr.cpp.o motion_planner.cpp.o main.cpp.o wiring.o hooks.o -lm 
-
-hex: elf	
-	avr-objcopy -O ihex -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0  motor_control.ino.elf motor_control.ino.eep
-	
-	avr-objcopy -O ihex -R .eeprom  motor_control.ino.elf motor_control.ino.hex
+# Clean up dependency file  
+.PHONY: clean-depend
+clean-depend: clean
+	$(RM) depend   

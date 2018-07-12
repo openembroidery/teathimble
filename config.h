@@ -4,12 +4,28 @@
 #include <Arduino.h>
 #include "arduino_32U4.h"
 
+/** \def KINEMATICS_STRAIGHT KINEMATICS_COREXY
+
+  This defines the type of kinematics your device uses. That's essential!
+
+  Valid values:
+
+  KINEMATICS_STRAIGHT
+    Motors move axis directions directly. This is the
+    traditional type, most popular. Set this for coil winding machine.
+
+  KINEMATICS_COREXY
+    A bot using CoreXY kinematics. Typical for CoreXY
+    are long and crossing toothed belts and a carriage
+    moving on the X-Y-plane.
+*/
 #define KINEMATICS_STRAIGHT
+//#define KINEMATICS_COREXY
+
 
 /** \def X_MIN X_MAX Y_MIN Y_MAX Z_MIN Z_MAX
   Soft axis limits. Define them to your machine's size relative to what your
-  G-code considers to be the origin (typically the bed's center or the bed's
-  front left corner).
+  G-code considers to be the origin.
 
   Note that relocating the origin at runtime with G92 will also relocate these
   limits.
@@ -18,23 +34,42 @@
   about 250 bytes smaller. Enabling only some of them is perfectly fine.
 
     Units: millimeters
-    Sane values: according to printer build room size
+    Sane values: according to device build room size
     Valid range: -1000.0 to 1000.0
 */
-/*
-#define X_MIN                    0.0
-#define X_MAX                    200.0
+
+/**
+ * Note for coils winding machine:
+ * X axis is a winding motor
+ * Y axis is a wire guide motor
+ **/
+
+//#define X_MIN                    0.0
+//#define X_MAX                    200.0
 
 #define Y_MIN                    0.0
-#define Y_MAX                    200.0
+#define Y_MAX                    150.0
 
-#define Z_MIN                    0.0
-#define Z_MAX                    140.0
+//#define Z_MIN                    0.0
+//#define Z_MAX                    140.0
+
+
+/** \def STEPS_PER_M_X STEPS_PER_M_Y STEPS_PER_M_Z STEPS_PER_M_E
+  Steps per meter ( = steps per mm * 1000 ), calculate these values
+  appropriate for your machine.
+
+  All numbers are integers, so no decimal point, please :-)
+
+    Valid range: 20 to 4'0960'000 (0.02 to 40960 steps/mm)
 */
-/*steps per meter*/
-
-#define STEPS_PER_M_X            1280000
-#define STEPS_PER_M_Y            1280000
+/**
+ * Note for coils winding machine:
+ * steps per 1000 reveloutions for Y winding motor
+ * X = 200 motor steps * 16 microsteps * 4 gear ratio * 1000 mm per meter
+ * Y = 48 motor steps * 16 microsteps * 1/1.0 M6 screw step * 1000 mm per meter
+ **/
+#define STEPS_PER_M_X            12800000
+#define STEPS_PER_M_Y            768000
 /*#define STEPS_PER_M_Z            1280000
 #define STEPS_PER_M_E            96271
 */
@@ -42,33 +77,74 @@
   Used when doing precision endstop search and as default feedrate. 
   (mm / min)  60 mm / min = 1 mm/sec
 */
-#define SEARCH_FEEDRATE_X        400
-#define SEARCH_FEEDRATE_Y        400
+#define SEARCH_FEEDRATE_X        150
+#define SEARCH_FEEDRATE_Y        150
 //#define SEARCH_FEEDRATE_Z        400
 
 /** \def MAXIMUM_FEEDRATE_X MAXIMUM_FEEDRATE_Y MAXIMUM_FEEDRATE_Z MAXIMUM_FEEDRATE_E
   Used for G0 rapid moves and as a cap for all other feedrates. (mm / min) 
 */
-#define MAXIMUM_FEEDRATE_X       6000
-#define MAXIMUM_FEEDRATE_Y       6000
+#define MAXIMUM_FEEDRATE_X       180
+#define MAXIMUM_FEEDRATE_Y       550
 /*#define MAXIMUM_FEEDRATE_Z       6000
 #define MAXIMUM_FEEDRATE_E       20000
 */
 /** \def ACCELERATION
   How fast to accelerate when using ACCELERATION_RAMPING. Start with 10 for
   milling (high precision) or 1000 for printing.
+  High values affect aproximation accuracy for low speeds.
 
     Units: mm/s^2
     Useful range: 1 to 10'000
 */
-#define ACCELERATION             100
+#define ACCELERATION             10
+
+/** \def ENDSTOP_CLEARANCE
+
+  When hitting an endstop, Teacup properly decelerates instead of doing an
+  aprupt stop to save your mechanics. Ineviteably, this means it overshoots
+  the endstop trigger point by some distance.
+
+  To deal with this, Teacup adapts homing movement speeds to what your
+  endstops can deal with. The higher the allowed acceleration ( = deceleration,
+  see #define ACCELERATION) and the more clearance the endstop comes with,
+  the faster Teacup will do homing movements.
+
+  Set here how many micrometers (mm * 1000) your endstop allows the carriage
+  to overshoot the trigger point. Typically 1000 or 2000 for mechanical
+  endstops, more for optical ones. You can set it to zero, in which case
+  SEARCH_FEEDRATE_{XYZ} is used, but expect very slow homing movements.
+
+    Units: micrometers
+    Sane values: 0 to 20000   (0 to 20 mm)
+    Valid range: 0 to 1000000
+*/
+#define ENDSTOP_CLEARANCE      2000
+
+/** \def ENDSTOP_STEPS
+  Number of steps to run into the endstops intentionally. As endstops trigger
+  false alarm sometimes, Teacup debounces them by counting a number of
+  consecutive positives.
+
+  Use 4 or less for reliable endstops, 8 or even more for flaky ones.
+
+    Valid range: 1...255.
+*/
+#define ENDSTOP_STEPS  2
+
+/** \def MILD_HOMING
+ Define this to prevent abrupt stop of movement when endstop is trigged. For lightweight mechanics 
+ and low max speed or high acceleration values it is ok to keep this disabled.
+*/
+//#ifdef MILD_HOMING
+
 
 /** \def LOOKAHEAD
   Define this to enable look-ahead during *ramping* acceleration to smoothly
   transition between moves instead of performing a dead stop every move.
   Enabling look-ahead requires about 3600 bytes of flash memory.
 */
-#define LOOKAHEAD
+//#define LOOKAHEAD
 
 /** \def MAX_JERK_X MAX_JERK_Y MAX_JERK_Z MAX_JERK_E
   When performing look-ahead, we need to decide what an acceptable jerk to the
@@ -114,11 +190,16 @@
 */
 #define XONXOFF
 
-/**************PINOUT****************/
+
+/** \def PINOUT
+ ***************PINOUT***************
+ * Here you can setup pin functions, depending on board configuration. 
+ **/
 
 #define X_STEP_PIN               PC3 // 19 PC3
 #define X_DIR_PIN                PC2 // 18 PC2
-#define X_MIN_PIN                DIO3
+//35 PA5
+#define X_MIN_PIN                PA5  
 #define X_MAX_PIN                DIO2
 #define X_ENABLE_PIN             PC4 // 20 PC4
 #define X_INVERT_DIR
@@ -128,7 +209,8 @@
 
 #define Y_STEP_PIN               DIO9 //22 PC6
 #define Y_DIR_PIN                PC5 //21 PC5
-#define Y_MIN_PIN                DIO8
+// 16 PD2
+#define Y_MIN_PIN                PD2
 #define Y_MAX_PIN                DIO7
 #define Y_ENABLE_PIN             DIO10 //23 PC7
 #define Y_INVERT_DIR
@@ -172,6 +254,18 @@
   be done during preceding longer moves.
 */
 #define MOVEBUFFER_SIZE          8
+
+/** \def USE_INTERNAL_PULLUPS
+
+  Most controller chips feature internal pullup resistors on their input pins,
+  which get used for endstops by turning on this switch. Don't turn it on when
+  using endstops which need no pull resistor, e.g. optical endstops, because
+  pull resistors are counterproductive there.
+
+  One can't use USE_INTERNAL_PULLUPS and USE_INTERNAL_PULLDOWNS at the same
+  time, of course.
+*/
+#define USE_INTERNAL_PULLUPS
 
 /** \def F_CPU
   Actual CPU clock rate. #ifndef required for Arduino compatibility.
@@ -217,6 +311,11 @@ extern volatile uint8_t debug_flags;
 
 #ifndef BSS
   #define BSS __attribute__ ((__section__ (".bss")))
+#endif
+
+#ifdef ENDSTOP_CLEARANCE
+  #define SEARCH_FAST (uint32_t)((double)60. * \
+            sqrt((double)2 * ACCELERATION * ENDSTOP_CLEARANCE / 1000.))
 #endif
 
 #endif  /* _CONFIG_H */

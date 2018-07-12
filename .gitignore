@@ -1,6 +1,7 @@
-*.d
+buildnumber.num
+depend
 *.o
-*.gz
-*.tar
+*.d
+*.eep
 *.elf
-*swp
+*.hex

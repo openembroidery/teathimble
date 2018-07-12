@@ -91,6 +91,14 @@ void dda_init(void) {
     startpoint.f_multiplier = 256;
 }
 
+/*! Distribute a new startpoint to DDA's internal structures without any movement.
+
+    This is needed for example after homing or a G92. The new location must be in startpoint already.
+*/
+void dda_new_startpoint(void) {
+    axes_um_to_steps(startpoint.axis, startpoint_steps.axis);
+}
+
 /*! Set the direction of the 'n' axis
 */
 static void set_direction(DDA *dda, uint8_t n, int32_t delta) {
@@ -277,7 +285,7 @@ void dda_create(DDA *dda, const TARGET *target) {
   }
 
     if (DEBUG_DDA && (debug_flags & DEBUG_DDA))
-    sersendf_P(PSTR(" [ts:%lu"), dda->total_steps);
+        sersendf_P(PSTR(" [ts:%lu"), dda->total_steps);
 
     if (dda->total_steps == 0) {
         dda->nullmove = 1;
@@ -559,11 +567,49 @@ void dda_clock() {
   //          in principle (but rarely) happen if endstops are checked not as
   //          endstop search, but as part of normal operations.
   if (dda->endstop_check && ! move_state.endstop_stop) {
+    #ifdef X_MIN_PIN
+    if (dda->endstop_check & 0x01) {
+      if (x_min() == dda->endstop_stop_cond)
+        move_state.debounce_count_x++;
+      else
+        move_state.debounce_count_x = 0;
+      endstop_trigger = move_state.debounce_count_x >= ENDSTOP_STEPS;
+    }
+    #endif
+    #ifdef X_MAX_PIN
+    if (dda->endstop_check & 0x02) {
+      if (x_max() == dda->endstop_stop_cond)
+        move_state.debounce_count_x++;
+      else
+        move_state.debounce_count_x = 0;
+      endstop_trigger = move_state.debounce_count_x >= ENDSTOP_STEPS;
+    }
+    #endif
+
+    #ifdef Y_MIN_PIN
+    if (dda->endstop_check & 0x04) {
+      if (y_min() == dda->endstop_stop_cond)
+        move_state.debounce_count_y++;
+      else
+        move_state.debounce_count_y = 0;
+      endstop_trigger = move_state.debounce_count_y >= ENDSTOP_STEPS;
+    }
+    #endif
+    #ifdef Y_MAX_PIN
+    if (dda->endstop_check & 0x08) {
+      if (y_max() == dda->endstop_stop_cond)
+        move_state.debounce_count_y++;
+      else
+        move_state.debounce_count_y = 0;
+      endstop_trigger = move_state.debounce_count_y >= ENDSTOP_STEPS;
+    }
+    #endif
    
 
     // If an endstop is definitely triggered, stop the movement.
     if (endstop_trigger) {
-        // For always smooth operations, don't halt apruptly,
+      #ifdef MILD_HOMING
+        // For always smooth operations, don't halt abruptly,
         // but start deceleration here.
         ATOMIC_START
           move_state.endstop_stop = 1;
@@ -575,9 +621,13 @@ void dda_clock() {
                                move_state.step_no;
           dda->rampdown_steps = move_state.step_no;
         ATOMIC_END
+
         // Not atomic, because not used in dda_step().
         dda->rampup_steps = 0; // in case we're still accelerating
-
+      #else
+        dda->live = 0;
+      #endif
+        
       endstops_off();
     }
   } /* ! move_state.endstop_stop */
@@ -638,6 +688,7 @@ void dda_clock() {
           In case such a change happened, values in the new dda are more
           recent than our calculation here, anyways.
         */
+      
         if (current_id == dda->id) {
           dda->c = move_c;
           dda->n = move_n;

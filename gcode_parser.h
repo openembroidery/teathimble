@@ -21,4 +21,7 @@ uint8_t gcode_parse_char(uint8_t c);
 /// setup variables
 void parser_init();
 
+// help function, home axis position by hitting endstop
+void home_pos_y();
+
 #endif  /* _GCODE_PARSE_H */

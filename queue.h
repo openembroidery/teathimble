@@ -11,6 +11,7 @@ extern DDA movebuffer[MOVEBUFFER_SIZE];
 // queue status methods
 uint8_t queue_full(void);
 uint8_t queue_empty(void);
+void queue_flush(void);
 DDA *queue_current_movement(void);
 
 /// Find the next DDA index after 'x', where 0 <= x < MOVEBUFFER_SIZE

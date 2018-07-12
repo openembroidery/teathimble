@@ -1,5 +1,7 @@
 #include "gcode_parser.h"
 #include "queue.h"
+#include "motor.h"
+#include "pinio.h"
 #include "serial.h"
 
 #define IS_DIGIT(c) (c >= '0' && c <= '9')
@@ -12,11 +14,12 @@
 
 GCODE_PARAM params[8];
 uint8_t current_parameter;
+uint8_t option_all_relative = 0;
 TARGET next_target;
 
 // Parser is implemented as a finite state automata (DFA)
 // This is pointer holds function with actions expected for current progress, each of these functions
-// changes its value on state change
+// represent one possible state
 uint8_t (*current_state)(uint8_t c);
 
 //a few state functions prototypes
@@ -79,9 +82,15 @@ void parser_init()
     next_target.f_multiplier = 256;
     parser_reset();
 }
-// this function executes command after is parsed
-void process_command()
+
+// This function executes all possible commands after those are parsed
+// Tinker with this to add new commands 
+uint8_t process_command()
 {
+    DDA *dda;
+    uint8_t result = 0;
+    if (option_all_relative) 
+        next_target.axis[X] = next_target.axis[Y] = 0;
     for(int i = 1; i <= current_parameter; ++i)
     {
         switch(params[i].name)
@@ -97,20 +106,121 @@ void process_command()
             break;
         }
     }
+    // convert relative to absolute
+    if (option_all_relative) {
+        next_target.axis[X] += startpoint.axis[X];
+        next_target.axis[Y] += startpoint.axis[Y];
+    }
+    // params[0] is always a operation with code
     switch(params[0].name)
     {
         case 'G':
-            //1
-            enqueue(&next_target);
+            switch(params[0].value)
+            {   
+                case 1: 
+                    //? Example: G1
+                    //?
+                    //? Linear move
+                    enqueue(&next_target); break;
+                case 28: 
+                    //? Example: G28
+                    //?
+                    //? home axis, y only
+                    next_target.axis[X] = next_target.axis[Y] = 0;
+                    home_pos_y(); 
+                    // just set X axis pos as zero
+                    current_position.axis[X] = startpoint.axis[X] = 0;
+                    dda_new_startpoint();
+                break; 
+                case 90: 
+                    //? Example: G90
+                    //?
+                    //? Absolute positioning
+                    option_all_relative = 0;
+                break;
+                case 91: 
+                    //? Example: G91
+                    //?
+                    //? Relative positioning
+                    option_all_relative = 1;
+                break;
+                default:
+                    result = STATE_ERROR;
+            }
         break;
         case 'M':
-            //114
-            update_current_position();
-            sersendf_P(PSTR("X:%lq,Y:%lq,F:%lu\n"),
-                    current_position.axis[X], current_position.axis[Y],
-                            current_position.F);
+            switch(params[0].value)
+            {
+                case 0: 
+                    //? Example: M0
+                    //?
+                    //? Stop or unconditional stop
+                    ATOMIC_START
+                    dda = queue_current_movement();
+                    if (dda != NULL)
+                    {
+                        update_current_position();
+                        memcpy(&startpoint, &current_position, sizeof(TARGET));
+                        dda->live = 0; dda->done = 1;
+                        #ifdef LOOKAHEAD
+                        dda->id--;
+                        #endif
+                        queue_flush();
+                        queue_step() ;
+                        dda_new_startpoint();
+                    }
+                    ATOMIC_END
+                break;
+                
+                case 112:
+                    //? Example: M112
+                    //?
+                    //? Any moves in progress are immediately terminated, then the controller
+                    //? shuts down. All motors are turned off. Only way to
+                    //? restart is to press the reset button on the master microcontroller.
+                    //? See also M0.
+                    //?
+                    timer_stop();
+                    queue_flush();
+                    cli();
+
+                break;
+                
+                case 114:
+                    //? Example: M114
+                    //?
+                    //? Get current pos
+                update_current_position();
+                sersendf_P(PSTR("X:%lq,Y:%lq,F:%lu\n"),
+                        current_position.axis[X], current_position.axis[Y],
+                                current_position.F);
+                break;
+                
+                case 119: 
+                    //? Example: M119
+                    //?
+                    //? Endstops status
+                    //power_on();
+                    endstops_on();
+                    //delay_ms(10); // allow the signal to stabilize
+                    #if defined(Y_MIN_PIN)
+                    sersendf_P(PSTR("X:%d,Y:%d\n"), x_min(), y_min());
+                    #endif
+                    endstops_off();
+                break;
+                case 202: //set acceleration
+                break;
+                case 222: //set speed
+                    
+                break;
+                default:
+                    result = STATE_ERROR;
+            }
         break;
+        default:
+            result = STATE_ERROR;
     }
+    return result;
 }
 
 
@@ -165,9 +275,9 @@ uint8_t parse_digit(uint8_t c)
     // all done, this digit is a end of instruction
     if(c == '\n' || c == '\r') {
         //process instruction
-        process_command();
+        c = process_command();
         parser_reset();
-        return 0;
+        return c;
     }
     if(c == '.')
     {
@@ -197,11 +307,10 @@ uint8_t start_parsing_number(uint8_t c)
     return STATE_ERROR;
 }
 
+// parsing of new instruction starts from HERE
 uint8_t gcode_parse_char(uint8_t c) {
 
     uint8_t result, checksum_char = c;
-
-    
     result = current_state(c);
     
     if IS_ENDING(c)
@@ -211,4 +320,33 @@ uint8_t gcode_parse_char(uint8_t c) {
         return 1;
     }
     return 0;
+}
+
+/// find Y MIN endstop position
+void home_pos_y() {
+    #if defined Y_MIN_PIN
+        TARGET t = startpoint;
+
+    t.axis[Y] = -1000000;
+    if (SEARCH_FAST > SEARCH_FEEDRATE_Y)
+      t.F = SEARCH_FAST;
+    else
+      t.F = SEARCH_FEEDRATE_Y;
+    enqueue_home(&t, 0x04, 1);
+
+    if (SEARCH_FAST > SEARCH_FEEDRATE_Y) {
+      t.axis[Y] = +1000000;
+            t.F = SEARCH_FEEDRATE_Y;
+      enqueue_home(&t, 0x04, 0);
+    }
+
+        // set Y home
+        //queue_wait();
+        #ifdef  Y_MIN
+      startpoint.axis[Y] = next_target.axis[Y] = (int32_t)(Y_MIN * 1000.);
+        #else
+      startpoint.axis[Y] = next_target.axis[Y] = 0;
+        #endif
+        dda_new_startpoint();
+    #endif
 }

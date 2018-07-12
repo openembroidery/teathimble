@@ -146,8 +146,9 @@ typedef struct {
   // Number the moves to be able to test at the end of lookahead if the moves
   // are the same. Note: we do not need a lot of granularity here: more than
   // MOVEBUFFER_SIZE is already enough.
-  uint8_t           id;
 #endif
+  
+  uint8_t           id;
 
   /// Small variables. Many CPUs can access 32-bit variables at word or double
   /// word boundaries only and fill smaller variables in between with gaps,
