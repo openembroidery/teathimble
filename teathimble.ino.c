@@ -1,22 +1,24 @@
-#include "queue.h"
-#include "timer.h"
-#include "serial.h"
-#include "pinio.h"
-#include "gcode_parser.h"
-#include "queue.h"
-
 #include "config.h"
 
 #ifdef SIMINFO
   #include "simulavr_info.h"
-  SIMINFO_DEVICE("atmega32");
+    #define STR(x)  #x
+    #define STRINGIZE(x) STR(x)
+  SIMINFO_DEVICE(STRINGIZE(MCU));
   SIMINFO_CPUFREQUENCY(F_CPU);
   #ifdef BAUD
     SIMINFO_SERIAL_IN("D0", "-", BAUD);
     SIMINFO_SERIAL_OUT("D1", "-", BAUD);
   #endif
 #endif
-    
+
+#ifndef ARDUINO     
+#include "queue.h"
+#include "timer.h"
+#include "serial.h"
+#include "pinio.h"
+#include "gcode_parser.h"
+#include "queue.h"
 uint8_t c, line_done, ack_waiting = 0;
 
 void setup(){
@@ -55,3 +57,4 @@ void loop()
         }
     }
 } 
+#endif

@@ -167,11 +167,16 @@ inline void power_init(void) {
   #endif
 }*/
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 void pinio_init(void);
 
 void power_on(void);
 void power_off(void);
-
+#ifdef __cplusplus
+}
+#endif
 /*
 X Stepper
 */

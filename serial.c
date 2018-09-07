@@ -82,10 +82,16 @@ void serial_init() {
   #endif
 
   UCSR0B = MASK(RXEN0) | MASK(TXEN0);
+  #if defined (__AVR_ATmega32U4__) || defined (__AVR_ATmega32__) || \
+      defined (__AVR_ATmega16__)
   UCSR0C = MASK(URSEL) | MASK(UCSZ01) | MASK(UCSZ00) |(0<<UMSEL)|(0<<UPM1)|(0<<UPM0)|(0<<USBS)|(0<<UCSZ2);
+  #else
+  UCSR0C = MASK(UCSZ01) | MASK(UCSZ00);
+  #endif
 
   UCSR0B |= MASK(RXCIE0) | MASK(UDRIE0);
 }
+
 
 /** Receive interrupt.
 
@@ -97,7 +103,11 @@ void serial_init() {
 #ifdef USART_RXC_vect
 ISR(USART_RXC_vect)
 #else
-ISR(USART0_RX_vect)
+    #ifdef USART_RX_vect
+    ISR(USART_RX_vect)
+    #else
+    ISR(USART0_RX_vect)
+    #endif
 #endif
 {
   if (buf_canwrite(rx))

@@ -34,7 +34,7 @@ const axes_uint32_t PROGMEM axis_qr_P = {
   Found on  http://stackoverflow.com/questions/4144232/
   how-to-calculate-a-times-b-divided-by-c-only-using-32-bit-integer-types-even-i
 */
-const int32_t muldivQR(int32_t multiplicand, uint32_t qn, uint32_t rn,
+int32_t muldivQR(int32_t multiplicand, uint32_t qn, uint32_t rn,
                        uint32_t divisor) {
   uint32_t quotient = 0;
   uint32_t remainder = 0;

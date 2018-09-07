@@ -1,31 +1,18 @@
-#include "gcode_parser.h"
 #include "queue.h"
 #include "motor.h"
 #include "pinio.h"
 #include "serial.h"
+#include "gcode_parser.h"
 
-#define IS_DIGIT(c) (c >= '0' && c <= '9')
-#define IS_LETTER(c) (c >= 'A' && c <= 'Z')
-#define IS_WHITECHAR(c) (c == ' ' || c == '\t')
-#define IS_ENDING(c) (c == '\n' || c == '\r')
-#define ATOI(c)     (c - '0')
-
-#define STATE_ERROR 1
-
-GCODE_PARAM params[8];
-uint8_t current_parameter;
+GCODE_PARAM BSS gcode_params[8];
+static volatile uint8_t current_parameter = 0;
 uint8_t option_all_relative = 0;
-TARGET next_target;
+TARGET BSS next_target;
 
 // Parser is implemented as a finite state automata (DFA)
 // This is pointer holds function with actions expected for current progress, each of these functions
 // represent one possible state
-uint8_t (*current_state)(uint8_t c);
-
-//a few state functions prototypes
-uint8_t start_parsing_parameter(uint8_t );
-uint8_t start_parsing_number(uint8_t);
-
+uint8_t (*parser_current_state)(uint8_t c);
 
 /// convert a floating point input value into an integer with appropriate scaling.
 /// \param mantissa the actual digits of our floating point number
@@ -57,15 +44,15 @@ static int32_t decfloat_to_int(uint32_t mantissa, uint8_t exponent, uint8_t sign
 
 void parser_reset()
 {
-    uint8_t i;
-   current_state = start_parsing_parameter; 
+   uint8_t i;
+   parser_current_state = start_parsing_parameter; 
    current_parameter = 0;
    for(i = 0; i < 8; ++i)
    {
-       //params[i].name = '\0';
-       params[i].value = 0;
-       params[i].exponent = 0;
-       params[i].is_negative = 0;
+       gcode_params[i].name = 0;
+       gcode_params[i].value = 0;
+       gcode_params[i].exponent = 0;
+       gcode_params[i].is_negative = 0;
     }
 }
 
@@ -93,16 +80,16 @@ uint8_t process_command()
         next_target.axis[X] = next_target.axis[Y] = 0;
     for(int i = 1; i <= current_parameter; ++i)
     {
-        switch(params[i].name)
+        switch(gcode_params[i].name)
         {
             case 'X':
-                next_target.axis[X] = decfloat_to_int(params[i].value, params[i].exponent, params[i].is_negative, 1000);
+                next_target.axis[X] = decfloat_to_int(gcode_params[i].value, gcode_params[i].exponent, gcode_params[i].is_negative, 1000);
             break;
             case 'Y':
-                next_target.axis[Y] = decfloat_to_int(params[i].value, params[i].exponent, params[i].is_negative, 1000);
+                next_target.axis[Y] = decfloat_to_int(gcode_params[i].value, gcode_params[i].exponent, gcode_params[i].is_negative, 1000);
             break;
             case 'F':
-                next_target.F = decfloat_to_int(params[i].value, params[i].exponent, params[i].is_negative, 1);
+                next_target.F = decfloat_to_int(gcode_params[i].value, gcode_params[i].exponent, gcode_params[i].is_negative, 1);
             break;
         }
     }
@@ -111,11 +98,11 @@ uint8_t process_command()
         next_target.axis[X] += startpoint.axis[X];
         next_target.axis[Y] += startpoint.axis[Y];
     }
-    // params[0] is always a operation with code
-    switch(params[0].name)
+    // gcode_params[0] is always a operation with code
+    switch(gcode_params[0].name)
     {
         case 'G':
-            switch(params[0].value)
+            switch(gcode_params[0].value)
             {   
                 case 1: 
                     //? Example: G1
@@ -149,7 +136,7 @@ uint8_t process_command()
             }
         break;
         case 'M':
-            switch(params[0].value)
+            switch(gcode_params[0].value)
             {
                 case 0: 
                     //? Example: M0
@@ -226,8 +213,6 @@ uint8_t process_command()
 
 uint8_t gcode_syntax_error(uint8_t c)
 {
-    if IS_ENDING(c)
-        parser_reset();
     return STATE_ERROR;
 }
 
@@ -243,11 +228,11 @@ uint8_t start_parsing_parameter(uint8_t c)
 
     if IS_LETTER(c)
     {
-        params[current_parameter].name = c;
-        current_state = start_parsing_number;
+        gcode_params[current_parameter].name = c;
+        parser_current_state = start_parsing_number;
         return 0;
     }
-    current_state = gcode_syntax_error;
+    parser_current_state = gcode_syntax_error;
     return STATE_ERROR;
 }
 
@@ -257,18 +242,18 @@ uint8_t parse_digit(uint8_t c)
     if IS_DIGIT(c)
     {
         // this is simply mantissa = (mantissa * 10) + atoi(c) in different clothes
-        params[current_parameter].value = (params[current_parameter].value << 3) +
-                                (params[current_parameter].value << 1) + ATOI(c);
+        gcode_params[current_parameter].value = (gcode_params[current_parameter].value << 3) +
+                                (gcode_params[current_parameter].value << 1) + ATOI(c);
                                 
-        if(params[current_parameter].exponent)
-            ++params[current_parameter].exponent;
+        if(gcode_params[current_parameter].exponent)
+            ++gcode_params[current_parameter].exponent;
         return 0;
     }
     
     //this digit is a end of parameter
     if IS_WHITECHAR(c)
     {
-        current_state = start_parsing_parameter;
+        parser_current_state = start_parsing_parameter;
         ++current_parameter;
         return 0;
     }
@@ -281,21 +266,21 @@ uint8_t parse_digit(uint8_t c)
     }
     if(c == '.')
     {
-        params[current_parameter].exponent = 1;
+        gcode_params[current_parameter].exponent = 1;
         return 0;
     }
     
-    current_state = gcode_syntax_error;
+    parser_current_state = gcode_syntax_error;
     return STATE_ERROR;
 }
 
 uint8_t start_parsing_number(uint8_t c)
 {
-    current_state = parse_digit;
+    parser_current_state = parse_digit;
     //negative number
     if(c == '-')
     {
-        params[current_parameter].is_negative = 1;
+        gcode_params[current_parameter].is_negative = 1;
         return 0;
     }
     if IS_DIGIT(c)
@@ -303,7 +288,7 @@ uint8_t start_parsing_number(uint8_t c)
         parse_digit(c);
         return 0;
     }
-    current_state = gcode_syntax_error;
+    parser_current_state = gcode_syntax_error;
     return STATE_ERROR;
 }
 
@@ -311,12 +296,15 @@ uint8_t start_parsing_number(uint8_t c)
 uint8_t gcode_parse_char(uint8_t c) {
 
     uint8_t result, checksum_char = c;
-    result = current_state(c);
+    result = parser_current_state(c);
     
     if IS_ENDING(c)
     {
         if ( result == STATE_ERROR) //error
+        {
+            parser_reset();
             return 2;
+        }
         return 1;
     }
     return 0;

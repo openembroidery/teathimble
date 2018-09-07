@@ -1,5 +1,8 @@
-# This makefile for now is used to build executable for simavr for debbuging.
-# Click & forget arduino IDE should deal with mcu flashing.
+# This simple makefile by default builds executable for simulavr for debbuging.
+# To disable simulavr info sections, launch make with SIMULFLAGS= 
+# Example command for flashing uno:
+# make flash MCU=atmega328p SIMULFLAGS= UPLOAD_PORT=/dev/ttyACM0
+# Click & forget arduino IDE should also deal with mcu flashing.
 
 # MCU ?= atmega168
 # MCU ?= atmega328p
@@ -16,27 +19,42 @@
 F_CPU ?= 16000000L
 # F_CPU ?= 20000000L
 
-ARDUINO_CORE = /usr/share/arduino/hardware/arduino/avr/cores/MightyCore
-ARDUINO_VARIANT = /usr/share/arduino/hardware/arduino/avr/variants/mega32
+UPLOAD_SPEED ?= 115200
+UPLOAD_PROTOCOL ?= stk500v1
+UPLOAD_PORT ?= /dev/ttyUSB0
 
-#avr gcc
-CC = avr-gcc 
-#avr objeccopy
-OBJCOPY = avr-objcopy
+# SET this path in same manner - to fit your destination
+ARDUINO_PATH = $(HOME)/arduino-1.6.13/hardware/arduino/avr/
+# COMMENT these two paths if you don't need to use mightycore, otherwise SET properly
+ARDUINO_CORE_PATH = $(HOME)/.arduino15/packages/MightyCore/hardware/avr/2.0.1/cores/MCUdude_corefiles/
+ARDUINO_VARIANT_PATH = $(HOME)/.arduino15/packages/MightyCore/hardware/avr/2.0.1/variants/standard/
 
-CFLAGS = -w -std=gnu++11 -Os -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -DF_CPU=16000000L -I$(ARDUINO_CORE) -I$(ARDUINO_VARIANT)
 
-CFLAGS += -mmcu=$(MCU)
-SIMULFLAGS = -Wl,--section-start=.siminfo=0x900000
+ARDUINO_CORE_PATH ?= $(ARDUINO_PATH)/cores/arduino
+ARDUINO_VARIANT_PATH ?= $(ARDUINO_PATH)/variants/standard/
+CORE_LIB_SRC =  \
+	$(ARDUINO_CORE_PATH)/main.cpp \
+	$(ARDUINO_CORE_PATH)/wiring.c \
+	$(ARDUINO_CORE_PATH)/hooks.c 
+
+#avr gcc - if you have avr toolchain installed on system just remove name prefix path
+CC = $(ARDUINO_PATH)../../tools/avr/bin/avr-gcc 
+#avr objectcopy
+OBJCOPY = $(ARDUINO_PATH)../../tools/avr/bin/avr-objcopy
+UPLOADER ?= $(ARDUINO_PATH)../../tools/avr/bin/avrdude
+
+CFLAGS = -w -std=gnu11 -Os -fno-exceptions -ffunction-sections -fdata-sections -fno-threadsafe-statics -DF_CPU=$(F_CPU) -DMCU=$(MCU) -I$(ARDUINO_CORE_PATH) -I$(ARDUINO_VARIANT_PATH)
+
+SIMULFLAGS = -Wl,--section-start=.siminfo=0x900000 -DSIMINFO=true
+CFLAGS += -mmcu=$(MCU) $(SIMULFLAGS)
 
 #debug?
-CFLAGS += -g
-
+#CFLAGS += -g
 OBJFLAG = -O ihex
 
 
 EXECUTABLE = teathimble
-SOURCES = ${wildcard *.cpp $(ARDUINO_CORE)/main.cpp $(ARDUINO_CORE)/wiring.c $(ARDUINO_CORE)/hooks.c}
+SOURCES = ${wildcard *.c $(CORE_LIB_SRC)}
 HEADERS = ${wildcard *.h}
 OBJECTS = ${SOURCES:.c=.o}
 
@@ -44,14 +62,14 @@ OBJECTS = ${SOURCES:.c=.o}
 all: ${EXECUTABLE}
 
 $(EXECUTABLE): $(OBJECTS) buildnumber.num
-	$(CC) $(CFLAGS)  $(SIMULFLAGS) -o $(EXECUTABLE).elf $(OBJECTS) -lm
+	$(CC) $(CFLAGS)  -o $(EXECUTABLE).elf $(OBJECTS) -lm
 	$(OBJCOPY) $(OBJFLAG) -j .eeprom --set-section-flags=.eeprom=alloc,load --no-change-warnings --change-section-lma .eeprom=0 $(EXECUTABLE).elf $(EXECUTABLE).eep
 
 	$(OBJCOPY) $(OBJFLAG) -R .eeprom  $(EXECUTABLE).elf $(EXECUTABLE).hex
 	@echo "-- Build: " $$(cat buildnumber.num)
 
 depend: $(SOURCES)
-	@echo "calling depend"
+	@echo "calling depend"	
 	$(CC) $(CFLAGS) -Os -c -MM $^ > $@
 
 -include depend
@@ -69,4 +87,7 @@ clean:
 # Clean up dependency file  
 .PHONY: clean-depend
 clean-depend: clean
-	$(RM) depend   
+	$(RM) depend  
+	
+flash: ${EXECUTABLE}
+	$(UPLOADER) -C $(ARDUINO_PATH)../../tools/avr/etc/avrdude.conf -v -p$(MCU) -carduino -P$(UPLOAD_PORT) -b$(UPLOAD_SPEED) -D -Uflash:w:$(EXECUTABLE).hex:i 

@@ -74,7 +74,17 @@
 
 #endif /* __AVR__, __ARMEL__, SIMULATOR */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void timer_init(void);
+
+void cpu_init();
+
+#ifdef __cplusplus
+}
+#endif
 
 uint8_t timer_set(int32_t delay, uint8_t check_short);
 
@@ -87,5 +97,8 @@ void timer_stop(void);
 
 //void clock(void);
 
-void cpu_init();
+// TIMER
+// microsecond delay, does NOT reset WDT if feature enabled
+void delay_us(uint16_t delay);
+
 #endif	/* _TIMER_H */

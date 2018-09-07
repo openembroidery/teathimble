@@ -48,7 +48,7 @@ extern const axes_uint32_t PROGMEM axis_qr_P;
 
 // return rounded result of multiplicand * multiplier / divisor
 // this version is with quotient and remainder precalculated elsewhere
-const int32_t muldivQR(int32_t multiplicand, uint32_t qn, uint32_t rn,
+int32_t muldivQR(int32_t multiplicand, uint32_t qn, uint32_t rn,
                        uint32_t divisor);
 
 // return rounded result of multiplicand * multiplier / divisor

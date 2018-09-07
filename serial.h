@@ -22,6 +22,10 @@ void sendf_P(void (*writechar)(uint8_t), PGM_P format_P, ...);
   #define serial_rxchars() usb_serial_available()
   #define serial_popchar() usb_serial_getchar()
 #else
+
+#ifdef __cplusplus
+extern "C" {
+#endif
   // initialise serial subsystem
   void serial_init(void);
 
@@ -40,5 +44,9 @@ void serial_writestr(uint8_t *data);
 
 // write from flash
 void serial_writestr_P(PGM_P data_P);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif	/* _SERIAL_H */

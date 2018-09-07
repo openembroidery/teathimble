@@ -1,9 +1,9 @@
+#ifdef ARDUINO 
 #include "queue.h"
 #include "timer.h"
 #include "serial.h"
 #include "pinio.h"
 #include "gcode_parser.h"
-#include "queue.h"
 
 uint8_t c, line_done, ack_waiting = 0;
 
@@ -43,5 +43,4 @@ void loop()
         }
     }
 } 
-
-
+#endif

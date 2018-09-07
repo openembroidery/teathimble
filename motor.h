@@ -47,7 +47,7 @@ typedef struct {
   uint16_t  e_multiplier;
   uint8_t   e_relative        :1; ///< bool: e axis relative? Overrides all_relative
 #endif
-} TARGET;
+} __attribute__ ((__packed__)) TARGET;
 
 /**
 	\struct MOVE_STATE
@@ -72,7 +72,7 @@ typedef struct {
 #ifdef STEPS_PER_M_Z
   uint8_t debounce_count_z;
 #endif
-} MOVE_STATE;
+} __attribute__ ((__packed__)) MOVE_STATE;
 
 /**
 	\struct DDA
@@ -109,7 +109,7 @@ typedef struct {
 #endif
 		};
     uint16_t            allflags; ///< used for clearing all flags
-	};
+	}__attribute__ ((__packed__));
 
 	// distances
   axes_uint32_t     delta;       ///< number of steps on each axis
@@ -159,7 +159,7 @@ typedef struct {
 	/// Endstop homing
 	uint8_t endstop_check; ///< Do we need to check endstops? 0x1=Check X, 0x2=Check Y, 0x4=Check Z
 	uint8_t endstop_stop_cond; ///< Endstop condition on which to stop motion: 0=Stop on detrigger, 1=Stop on trigger
-} DDA;
+}__attribute__ ((__packed__)) DDA;
 
 /*
 	variables
@@ -177,9 +177,15 @@ extern TARGET current_position;
 /*
 	methods
 */
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 // initialize dda structures
 void dda_init(void);
+
+#ifdef __cplusplus
+}
+#endif
 
 // distribute a new startpoint
 void dda_new_startpoint(void);

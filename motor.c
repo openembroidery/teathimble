@@ -13,7 +13,7 @@
 #include    "timer.h"
 #include    "serial.h"
 #include    "queue.h"
-#include "gcode_parser.h"
+
 #include    "pinio.h"
 
 /*
@@ -55,7 +55,7 @@ static const axes_uint32_t PROGMEM maximum_feedrate_P = {
 };
 
 /// \var current_position
-/// \brief actual position of extruder head
+/// \brief actual position of carriage
 /// \todo make current_position = real_position (from endstops) + offset from G28 and friends
 TARGET BSS current_position;
 
@@ -418,14 +418,12 @@ void dda_start(DDA *dda) {
                dda->endpoint.axis[X], dda->endpoint.axis[Y],dda->endpoint.F);        
     #endif
                
-
-    if ( ! dda->nullmove) {
         // get ready to go
         //psu_timeout = 0;
-
+        
         if (dda->endstop_check)
             endstops_on();
-
+        
         // set direction outputs
         x_direction(dda->x_direction);
         y_direction(dda->y_direction);
@@ -452,10 +450,9 @@ void dda_start(DDA *dda) {
         
         // ensure this dda starts
         dda->live = 1;
-
+        
         // set timeout for first step
         timer_set(dda->c, 0);
-    }
     // else just a speed change, keep dda->live = 0
 
     current_position.F = dda->endpoint.F;
@@ -676,6 +673,15 @@ void dda_clock() {
       if (move_c < dda->c_min) {
         // We hit max speed not always exactly.
         move_c = dda->c_min;
+        
+        // This is a hack which deals with movements with an unknown number of
+        // acceleration steps. dda_create() sets a very high number, then,
+        // but we don't want to re-calculate all the time.
+        // This hack doesn't work with lookahead.
+        #ifndef LOOKAHEAD
+          dda->rampup_steps = move_step_no;
+          dda->rampdown_steps = dda->total_steps - dda->rampup_steps;
+        #endif
       }
 
       // Write results.
@@ -695,11 +701,20 @@ void dda_clock() {
         }
       ATOMIC_END
     }
+    else {
+      ATOMIC_START
+        if (current_id == dda->id)
+          // This happens only when !recalc_speed, meaning we are cruising, not
+          // accelerating or decelerating. So it pegs our dda->c at c_min if it
+          // never made it as far as c_min. 
+          dda->c = dda->c_min;
+      ATOMIC_END
+    }
 } 
 
 /// update global current_position struct
 void update_current_position() {
-    DDA *dda = &movebuffer[mb_tail];
+    DDA *dda = mb_tail_dda;
   uint8_t i;
 
   // Use smaller values to adjust to avoid overflow in later calculations,

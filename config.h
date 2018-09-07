@@ -2,7 +2,7 @@
 #define _CONFIG_H
 
 #include <Arduino.h>
-#include "arduino_32U4.h"
+#include "arduino.h"
 
 /** \def KINEMATICS_STRAIGHT KINEMATICS_COREXY
 
@@ -190,29 +190,45 @@
 */
 #define XONXOFF
 
+/** \def MOTHERBOARD
+ ***************MOTHERBOARD***************
+ * Define this to use one of predefined configuratoins.
+ **/
+//#define MOTHERBOARD 2
+#include "boards.h"
+
 
 /** \def PINOUT
  ***************PINOUT***************
  * Here you can setup pin functions, depending on board configuration. 
+ * Comment board define above to enable this customizable config.
  **/
 
-#define X_STEP_PIN               PC3 // 19 PC3
-#define X_DIR_PIN                PC2 // 18 PC2
+#ifndef MOTHERBOARD
+#define MOTHERBOARD
+#define X_STEP_PIN               PC3
+// 19 PC3
+#define X_DIR_PIN                PC2
+// 18 PC2
+#define X_MIN_PIN                PA5
 //35 PA5
-#define X_MIN_PIN                PA5  
 #define X_MAX_PIN                DIO2
-#define X_ENABLE_PIN             PC4 // 20 PC4
+#define X_ENABLE_PIN             PC4
+// 20 PC4
 #define X_INVERT_DIR
 #define X_INVERT_MIN
 #define X_INVERT_MAX
 #define X_INVERT_ENABLE
 
-#define Y_STEP_PIN               DIO9 //22 PC6
-#define Y_DIR_PIN                PC5 //21 PC5
+#define Y_STEP_PIN               DIO9
+//22 PC6
+#define Y_DIR_PIN                PC5
+//21 PC5
 // 16 PD2
 #define Y_MIN_PIN                PD2
 #define Y_MAX_PIN                DIO7
-#define Y_ENABLE_PIN             DIO10 //23 PC7
+#define Y_ENABLE_PIN             DIO10
+//23 PC7
 #define Y_INVERT_DIR
 #define Y_INVERT_MIN
 #define Y_INVERT_MAX
@@ -243,6 +259,8 @@
 #define SWITCH1_PIN 34
 #define SWITCH2_PIN 35
 #define SWITCH3_PIN 16
+
+#endif
 
 /** \def MOVEBUFFER_SIZE
   Move buffer size, in number of moves.
@@ -287,7 +305,7 @@
 #define DEBUG_LED_PIN            PC1
 
 ////////////////DEBUG/////////////////////
-#define SIMINFO
+//#define SIMINFO
 #define DEBUG 1
 
 #ifdef  DEBUG
