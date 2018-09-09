@@ -104,6 +104,7 @@ uint8_t process_command()
         case 'G':
             switch(gcode_params[0].value)
             {   
+                case 0:
                 case 1: 
                     //? Example: G1
                     //?
@@ -114,6 +115,7 @@ uint8_t process_command()
                     //?
                     //? home axis, y only
                     next_target.axis[X] = next_target.axis[Y] = 0;
+                    home_pos_x(); 
                     home_pos_y(); 
                     // just set X axis pos as zero
                     current_position.axis[X] = startpoint.axis[X] = 0;
@@ -189,10 +191,14 @@ uint8_t process_command()
                     //? Endstops status
                     //power_on();
                     endstops_on();
-                    //delay_ms(10); // allow the signal to stabilize
-                    #if defined(Y_MIN_PIN)
-                    sersendf_P(PSTR("X:%d,Y:%d\n"), x_min(), y_min());
+                    delay_us(1000); // allow the signal to stabilize
+                    #if defined(X_MIN_PIN)
+                    sersendf_P(PSTR("X:%d "), x_min());
                     #endif
+                    #if  defined(Y_MIN_PIN)
+                    sersendf_P(PSTR("Y:%d"), y_min());
+                    #endif
+                    serial_writestr_P(PSTR("\n"));
                     endstops_off();
                 break;
                 case 202: //set acceleration
@@ -320,7 +326,7 @@ void home_pos_y() {
       t.F = SEARCH_FAST;
     else
       t.F = SEARCH_FEEDRATE_Y;
-    enqueue_home(&t, 0x04, 1);
+    enqueue_home(&t, 0x04, 1); // 04 is magic for y min endstp check
 
     if (SEARCH_FAST > SEARCH_FEEDRATE_Y) {
       t.axis[Y] = +1000000;
@@ -334,6 +340,34 @@ void home_pos_y() {
       startpoint.axis[Y] = next_target.axis[Y] = (int32_t)(Y_MIN * 1000.);
         #else
       startpoint.axis[Y] = next_target.axis[Y] = 0;
+        #endif
+        dda_new_startpoint();
+    #endif
+}
+/// find X MIN endstop position
+void home_pos_x() {
+    #if defined X_MIN_PIN
+        TARGET t = startpoint;
+
+    t.axis[Y] = -1000000;
+    if (SEARCH_FAST > SEARCH_FEEDRATE_X)
+      t.F = SEARCH_FAST;
+    else
+      t.F = SEARCH_FEEDRATE_X;
+    enqueue_home(&t, 0x01, 1); // 01 is magic for x min endstp check
+
+    if (SEARCH_FAST > SEARCH_FEEDRATE_X) {
+      t.axis[Y] = +1000000;
+            t.F = SEARCH_FEEDRATE_X;
+      enqueue_home(&t, 0x01, 0);
+    }
+
+        // set Y home
+        //queue_wait();
+        #ifdef  X_MIN
+      startpoint.axis[X] = next_target.axis[X] = (int32_t)(X_MIN * 1000.);
+        #else
+      startpoint.axis[X] = next_target.axis[X] = 0;
         #endif
         dda_new_startpoint();
     #endif

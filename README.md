@@ -10,7 +10,7 @@ Teathimble is a minimalistic firmware intended to control variety of stepper mot
 - Decent performance: can run up to 48'000 evenly spaced steps/second on 20 MHz as mentioned by core developers.
 
 ## Work progress
-This branch contains modification dedicated to simple [coil winding machine](https://gitlab.com/markol/Coil_winder). Current code is checked on custom made arduino-like board top on ATmega32 to control winder. It is just a matter of formality to port configurations on other avaiable boards. You might also need [this arduino core](https://github.com/MCUdude/MightyCore) to turn custom board into arduino compatible.
+For coli winder machine check this [branch](https://gitlab.com/markol/Coil_winder). Current code is checked on custom made arduino-like board top on ATmega32 to control winder. It is just a matter of formality to port configurations on other avaiable boards. You might also need [this arduino core](https://github.com/MCUdude/MightyCore) to turn custom board into arduino compatible.
 To run inside simple [simulator](https://reprap.org/wiki/SimulAVR) build project with enclosed makefile, this might be come in handy for development.
 
 ## Building

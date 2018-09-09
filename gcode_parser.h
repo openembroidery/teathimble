@@ -43,6 +43,7 @@ void parser_init();
 #endif
 
 // help function, home axis position by hitting endstop
+void home_pos_x();
 void home_pos_y();
 
 #endif  /* _GCODE_PARSE_H */

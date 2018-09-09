@@ -19,8 +19,8 @@
     are long and crossing toothed belts and a carriage
     moving on the X-Y-plane.
 */
-#define KINEMATICS_STRAIGHT
-//#define KINEMATICS_COREXY
+//#define KINEMATICS_STRAIGHT
+#define KINEMATICS_COREXY
 
 
 /** \def X_MIN X_MAX Y_MIN Y_MAX Z_MIN Z_MAX
@@ -38,17 +38,11 @@
     Valid range: -1000.0 to 1000.0
 */
 
-/**
- * Note for coils winding machine:
- * X axis is a winding motor
- * Y axis is a wire guide motor
- **/
-
-//#define X_MIN                    0.0
-//#define X_MAX                    200.0
+#define X_MIN                    0.0
+#define X_MAX                    280.0
 
 #define Y_MIN                    0.0
-#define Y_MAX                    150.0
+#define Y_MAX                    280.0
 
 //#define Z_MIN                    0.0
 //#define Z_MAX                    140.0
@@ -63,13 +57,10 @@
     Valid range: 20 to 4'0960'000 (0.02 to 40960 steps/mm)
 */
 /**
- * Note for coils winding machine:
- * steps per 1000 reveloutions for Y winding motor
- * X = 200 motor steps * 16 microsteps * 4 gear ratio * 1000 mm per meter
- * Y = 48 motor steps * 16 microsteps * 1/1.0 M6 screw step * 1000 mm per meter
- **/
-#define STEPS_PER_M_X            12800000
-#define STEPS_PER_M_Y            768000
+ * X = Y = (200 motor steps * 16 microsteps ) / (18 pulley tooth count * 2.03 mm tooth spacing ) * 1000 mm per meter
+  **/
+#define STEPS_PER_M_X            87575
+#define STEPS_PER_M_Y            87575
 /*#define STEPS_PER_M_Z            1280000
 #define STEPS_PER_M_E            96271
 */
@@ -77,15 +68,15 @@
   Used when doing precision endstop search and as default feedrate. 
   (mm / min)  60 mm / min = 1 mm/sec
 */
-#define SEARCH_FEEDRATE_X        150
-#define SEARCH_FEEDRATE_Y        150
+#define SEARCH_FEEDRATE_X        10000
+#define SEARCH_FEEDRATE_Y        10000
 //#define SEARCH_FEEDRATE_Z        400
 
 /** \def MAXIMUM_FEEDRATE_X MAXIMUM_FEEDRATE_Y MAXIMUM_FEEDRATE_Z MAXIMUM_FEEDRATE_E
   Used for G0 rapid moves and as a cap for all other feedrates. (mm / min) 
 */
-#define MAXIMUM_FEEDRATE_X       180
-#define MAXIMUM_FEEDRATE_Y       550
+#define MAXIMUM_FEEDRATE_X       36000
+#define MAXIMUM_FEEDRATE_Y       36000
 /*#define MAXIMUM_FEEDRATE_Z       6000
 #define MAXIMUM_FEEDRATE_E       20000
 */
@@ -97,7 +88,7 @@
     Units: mm/s^2
     Useful range: 1 to 10'000
 */
-#define ACCELERATION             10
+#define ACCELERATION             6000
 
 /** \def ENDSTOP_CLEARANCE
 
@@ -136,7 +127,7 @@
  Define this to prevent abrupt stop of movement when endstop is trigged. For lightweight mechanics 
  and low max speed or high acceleration values it is ok to keep this disabled.
 */
-//#ifdef MILD_HOMING
+#define MILD_HOMING
 
 
 /** \def LOOKAHEAD
@@ -168,8 +159,8 @@
     Sane values: 0 to 400
     Valid range: 0 to 65535
 */
-#define MAX_JERK_X               80
-#define MAX_JERK_Y               80
+#define MAX_JERK_X               400
+#define MAX_JERK_Y               400
 /*#define MAX_JERK_Z               0
 #define MAX_JERK_E               200*/
 
@@ -179,7 +170,7 @@
   115200, other common values are 19200, 38400 or 57600. Ignored when USB_SERIAL
   is defined.
 */
-#define BAUD                     9600
+#define BAUD                     115200
 
 /** \def XONXOFF
   Xon/Xoff flow control.
@@ -212,7 +203,7 @@
 // 18 PC2
 #define X_MIN_PIN                PA5
 //35 PA5
-#define X_MAX_PIN                DIO2
+//#define X_MAX_PIN                DIO2
 #define X_ENABLE_PIN             PC4
 // 20 PC4
 #define X_INVERT_DIR
@@ -225,8 +216,8 @@
 #define Y_DIR_PIN                PC5
 //21 PC5
 // 16 PD2
-#define Y_MIN_PIN                PD2
-#define Y_MAX_PIN                DIO7
+#define Y_MIN_PIN                PA6
+//#define Y_MAX_PIN                DIO7
 #define Y_ENABLE_PIN             DIO10
 //23 PC7
 #define Y_INVERT_DIR
@@ -251,7 +242,7 @@
 #define E_INVERT_ENABLE
 */
 
-#define ENCODER_PIN 17
+#define ENCODER_PIN PD3
 
 #define PWR_OUT1_PIN 18
 #define PWR_OUT2_PIN 19
@@ -306,7 +297,7 @@
 
 ////////////////DEBUG/////////////////////
 //#define SIMINFO
-#define DEBUG 1
+//#define DEBUG 1
 
 #ifdef  DEBUG
   #define DEBUG_ECHO       1

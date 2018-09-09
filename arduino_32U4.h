@@ -306,6 +306,13 @@ pins
 #define PA5_PWM      NULL
 #define PA5_DDR      DDRA
 
+#undef PA6
+#define PA6_PIN      PINA6
+#define PA6_RPORT    PINA
+#define PA6_WPORT    PORTA
+#define PA6_PWM      NULL
+#define PA6_DDR      DDRA
+
 // Port B is fully available
 #undef PB0
 #define PB0_PIN      PINB0
