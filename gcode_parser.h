@@ -18,7 +18,6 @@ typedef struct {
     uint8_t is_negative;
 } GCODE_PARAM;
 
-extern GCODE_PARAM gcode_params[8];
 extern TARGET next_target;
 
 //a few state functions prototypes
@@ -42,8 +41,5 @@ void parser_init();
 }
 #endif
 
-// help function, home axis position by hitting endstop
-void home_pos_x();
-void home_pos_y();
 
 #endif  /* _GCODE_PARSE_H */

@@ -1,6 +1,7 @@
 #include "queue.h"
 #include "motor.h"
 #include "pinio.h"
+#include "homing.h"
 #include "serial.h"
 #include "gcode_parser.h"
 
@@ -105,21 +106,21 @@ uint8_t process_command()
             switch(gcode_params[0].value)
             {   
                 case 0:
-                case 1: 
-                    //? Example: G1
+                    //? Example: G0
                     //?
                     //? Linear move
                     enqueue(&next_target); break;
+                case 1: 
+                    //? Example: G1
+                    //?
+                    //? Linear move with tool down
+                    enqueue_home(&next_target, 0, 0xf0); break;
                 case 28: 
                     //? Example: G28
                     //?
-                    //? home axis, y only
-                    next_target.axis[X] = next_target.axis[Y] = 0;
-                    home_pos_x(); 
-                    home_pos_y(); 
-                    // just set X axis pos as zero
-                    current_position.axis[X] = startpoint.axis[X] = 0;
-                    dda_new_startpoint();
+                    //? home all axis
+                    queue_wait(); // wait for queue to empty
+                    home();
                 break; 
                 case 90: 
                     //? Example: G90
@@ -314,61 +315,4 @@ uint8_t gcode_parse_char(uint8_t c) {
         return 1;
     }
     return 0;
-}
-
-/// find Y MIN endstop position
-void home_pos_y() {
-    #if defined Y_MIN_PIN
-        TARGET t = startpoint;
-
-    t.axis[Y] = -1000000;
-    if (SEARCH_FAST > SEARCH_FEEDRATE_Y)
-      t.F = SEARCH_FAST;
-    else
-      t.F = SEARCH_FEEDRATE_Y;
-    enqueue_home(&t, 0x04, 1); // 04 is magic for y min endstp check
-
-    if (SEARCH_FAST > SEARCH_FEEDRATE_Y) {
-      t.axis[Y] = +1000000;
-            t.F = SEARCH_FEEDRATE_Y;
-      enqueue_home(&t, 0x04, 0);
-    }
-
-        // set Y home
-        //queue_wait();
-        #ifdef  Y_MIN
-      startpoint.axis[Y] = next_target.axis[Y] = (int32_t)(Y_MIN * 1000.);
-        #else
-      startpoint.axis[Y] = next_target.axis[Y] = 0;
-        #endif
-        dda_new_startpoint();
-    #endif
-}
-/// find X MIN endstop position
-void home_pos_x() {
-    #if defined X_MIN_PIN
-        TARGET t = startpoint;
-
-    t.axis[Y] = -1000000;
-    if (SEARCH_FAST > SEARCH_FEEDRATE_X)
-      t.F = SEARCH_FAST;
-    else
-      t.F = SEARCH_FEEDRATE_X;
-    enqueue_home(&t, 0x01, 1); // 01 is magic for x min endstp check
-
-    if (SEARCH_FAST > SEARCH_FEEDRATE_X) {
-      t.axis[Y] = +1000000;
-            t.F = SEARCH_FEEDRATE_X;
-      enqueue_home(&t, 0x01, 0);
-    }
-
-        // set Y home
-        //queue_wait();
-        #ifdef  X_MIN
-      startpoint.axis[X] = next_target.axis[X] = (int32_t)(X_MIN * 1000.);
-        #else
-      startpoint.axis[X] = next_target.axis[X] = 0;
-        #endif
-        dda_new_startpoint();
-    #endif
 }

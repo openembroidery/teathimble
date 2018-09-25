@@ -105,6 +105,13 @@ void enqueue_home(TARGET const *t, uint8_t endstop_check, uint8_t endstop_stop_c
 
   new_movebuffer->endstop_check = endstop_check;
   new_movebuffer->endstop_stop_cond = endstop_stop_cond;
+  #ifdef TRIGGERED_MOVEMENT
+  // this dda is started by interrupt
+  if(endstop_stop_cond & 0xf0)
+  {
+     new_movebuffer->waitfor = 1;
+  }
+  #endif
   dda_create(new_movebuffer, t);
 
   /**
@@ -157,12 +164,15 @@ void queue_flush() {
   mb_tail = mb_head;
   mb_tail_dda = NULL;
 }
-/*
+
 /// wait for queue to empty
 void queue_wait() {
-  while (mb_tail_dda)
-        clock();
+  while (mb_tail_dda){ 
+      delay_us(100); 
+        // do recalc of another stuff 
+        //clock();
+  }
 }
 
-*/
+
 

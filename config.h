@@ -75,8 +75,8 @@
 /** \def MAXIMUM_FEEDRATE_X MAXIMUM_FEEDRATE_Y MAXIMUM_FEEDRATE_Z MAXIMUM_FEEDRATE_E
   Used for G0 rapid moves and as a cap for all other feedrates. (mm / min) 
 */
-#define MAXIMUM_FEEDRATE_X       36000
-#define MAXIMUM_FEEDRATE_Y       36000
+#define MAXIMUM_FEEDRATE_X       33000
+#define MAXIMUM_FEEDRATE_Y       33000
 /*#define MAXIMUM_FEEDRATE_Z       6000
 #define MAXIMUM_FEEDRATE_E       20000
 */
@@ -110,7 +110,8 @@
     Sane values: 0 to 20000   (0 to 20 mm)
     Valid range: 0 to 1000000
 */
-#define ENDSTOP_CLEARANCE      2000
+#define ENDSTOP_CLEARANCE_X      100
+#define ENDSTOP_CLEARANCE_Y      100
 
 /** \def ENDSTOP_STEPS
   Number of steps to run into the endstops intentionally. As endstops trigger
@@ -128,6 +129,11 @@
  and low max speed or high acceleration values it is ok to keep this disabled.
 */
 #define MILD_HOMING
+
+/** \def TRIGGERED_MOVEMENT
+ Define this to start new G1 movement only by external interrupt from additional sensor switch.
+*/
+#define TRIGGERED_MOVEMENT
 
 
 /** \def LOOKAHEAD
@@ -242,14 +248,16 @@
 #define E_INVERT_ENABLE
 */
 
-#define ENCODER_PIN PD3
+#define ENCODER_PIN_A PD3
+#define ENCODER_PIN_B PA4
+#define INVERT_DIRECTION_ENCODER
 
 #define PWR_OUT1_PIN 18
 #define PWR_OUT2_PIN 19
 #define ANALOG_IN_PIN 33
 #define SWITCH1_PIN 34
 #define SWITCH2_PIN 35
-#define SWITCH3_PIN 16
+#define SWITCH3_PIN PD2
 
 #endif
 
@@ -322,9 +330,5 @@ extern volatile uint8_t debug_flags;
   #define BSS __attribute__ ((__section__ (".bss")))
 #endif
 
-#ifdef ENDSTOP_CLEARANCE
-  #define SEARCH_FAST (uint32_t)((double)60. * \
-            sqrt((double)2 * ACCELERATION * ENDSTOP_CLEARANCE / 1000.))
-#endif
 
 #endif  /* _CONFIG_H */

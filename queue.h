@@ -6,11 +6,12 @@
 
 extern uint_fast8_t mb_tail;
 extern DDA movebuffer[MOVEBUFFER_SIZE];
-extern DDA *mb_tail_dda;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+extern DDA *mb_tail_dda;
+
 // queue status methods
 uint8_t queue_full(void);
 uint8_t queue_empty(void);
@@ -39,5 +40,6 @@ inline void enqueue(const TARGET *t) {
   enqueue_home(t, 0, 0);
 }
 
+void queue_wait();
 
 #endif  /* _QUEUE_H */

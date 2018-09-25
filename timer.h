@@ -94,7 +94,7 @@ void timer_stop(void);
 
 // Should be called every TICK_TIME (currently 2 ms).
 //void clock_tick(void);
-
+// Called in busy loops
 //void clock(void);
 
 // TIMER

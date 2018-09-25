@@ -299,6 +299,13 @@ pins
 // The PWM 
 
 // Port A isn't defined
+#undef PA4
+#define PA4_PIN      PINA4
+#define PA4_RPORT    PINA
+#define PA4_WPORT    PORTA
+#define PA4_PWM      NULL
+#define PA4_DDR      DDRA
+
 #undef PA5
 #define PA5_PIN      PINA5
 #define PA5_RPORT    PINA

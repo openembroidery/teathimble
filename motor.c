@@ -149,9 +149,6 @@ void dda_create(DDA *dda, const TARGET *target) {
     prev_dda = NULL;
   #endif
 
-  if (dda->waitfor)
-    return;
-
   // We end at the passed target.
   memcpy(&(dda->endpoint), target, sizeof(TARGET));
 #ifdef STEPS_PER_M_Z
@@ -407,7 +404,15 @@ void dda_create(DDA *dda, const TARGET *target) {
 
 void dda_start(DDA *dda) {
     // called from interrupt context: keep it simple!
-
+   
+        if (dda->endstop_check)
+            endstops_on();
+        #ifdef TRIGGERED_MOVEMENT
+        // if movement dda in not allowed yet
+        else if(dda->waitfor)
+            return;
+        #endif
+        
   if (DEBUG_DDA && (debug_flags & DEBUG_DDA))
     #ifdef STEPS_PER_M_Z
         sersendf_P(PSTR("Start: X %lq  Y %lq  Z %lq  F %lu\n"),
@@ -417,12 +422,9 @@ void dda_start(DDA *dda) {
         sersendf_P(PSTR("Start: X %lq  Y %lq  F %lu\n"),
                dda->endpoint.axis[X], dda->endpoint.axis[Y],dda->endpoint.F);        
     #endif
-               
+    
         // get ready to go
         //psu_timeout = 0;
-        
-        if (dda->endstop_check)
-            endstops_on();
         
         // set direction outputs
         x_direction(dda->x_direction);
@@ -610,13 +612,15 @@ void dda_clock() {
         // but start deceleration here.
         ATOMIC_START
           move_state.endstop_stop = 1;
-          if (move_state.step_no < dda->rampup_steps)  // still accelerating
-            dda->total_steps = move_state.step_no * 2;
-          else
-            // A "-=" would overflow earlier.
-            dda->total_steps = dda->total_steps - dda->rampdown_steps +
-                               move_state.step_no;
-          dda->rampdown_steps = move_state.step_no;
+          move_step_no = dda->total_steps - move_state.steps[dda->fast_axis];
+
+          if (move_step_no > dda->rampup_steps) {  // cruising?
+            move_step_no = dda->total_steps - dda->rampdown_steps;
+          }
+
+          dda->rampdown_steps = move_step_no;
+          dda->total_steps = move_step_no * 2;
+          move_state.steps[dda->fast_axis] = move_step_no;
         ATOMIC_END
 
         // Not atomic, because not used in dda_step().

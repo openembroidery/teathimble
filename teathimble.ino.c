@@ -27,6 +27,7 @@ void setup(){
   pinio_init();
   timer_init();
   dda_init();
+  sensing_init();
   parser_init();
   sei();
   serial_writestr_P(PSTR("start\nok\n"));

@@ -3,6 +3,7 @@
 #include "timer.h"
 #include "serial.h"
 #include "pinio.h"
+#include "sensors_control.h"
 #include "gcode_parser.h"
 
 uint8_t c, line_done, ack_waiting = 0;
@@ -13,6 +14,7 @@ void setup(){
   pinio_init();
   timer_init();
   dda_init();
+  sensing_init();
   parser_init();
   sei();
   serial_writestr_P(PSTR("start\nok\n"));

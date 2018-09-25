@@ -42,7 +42,7 @@ void write_hex32(void (*writechar)(uint8_t), uint32_t v) {
 }
 
 /// list of powers of ten, used for dividing down decimal numbers for sending, and also for our crude floating point algorithm
-extern const uint32_t powers[] = {1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
+const uint32_t powers[] = {1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};
 
 /** write decimal digits from a long unsigned int
 	\param v number to send
