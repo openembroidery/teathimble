@@ -16,6 +16,7 @@ extern DDA *mb_tail_dda;
 uint8_t queue_full(void);
 uint8_t queue_empty(void);
 void queue_flush(void);
+uint8_t queue_current_size();
 #ifdef __cplusplus
 }
 #endif

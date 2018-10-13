@@ -10,10 +10,14 @@
 	#define direction_encoder()						(READ(ENCODER_PIN_B)?0:1)
 #endif
 
+extern int16_t desired_speed;
+void stop_dc_motor();
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 void sensing_init();
+void update_dc_motor();
  #ifdef __cplusplus
 }
 #endif

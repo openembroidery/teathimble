@@ -4,10 +4,12 @@
 #include "homing.h"
 #include "serial.h"
 #include "gcode_parser.h"
+#include "sensors_control.h"
 
 GCODE_PARAM BSS gcode_params[8];
 static volatile uint8_t current_parameter = 0;
 uint8_t option_all_relative = 0;
+int16_t speed_limit = 0;
 TARGET BSS next_target;
 
 // Parser is implemented as a finite state automata (DFA)
@@ -91,6 +93,9 @@ uint8_t process_command()
             break;
             case 'F':
                 next_target.F = decfloat_to_int(gcode_params[i].value, gcode_params[i].exponent, gcode_params[i].is_negative, 1);
+            break;
+            case 'S':
+               speed_limit = decfloat_to_int(gcode_params[i].value, gcode_params[i].exponent, gcode_params[i].is_negative, 1);
             break;
         }
     }
@@ -205,7 +210,7 @@ uint8_t process_command()
                 case 202: //set acceleration
                 break;
                 case 222: //set speed
-                    
+                    desired_speed = speed_limit;
                 break;
                 default:
                     result = STATE_ERROR;

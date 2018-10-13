@@ -88,7 +88,7 @@
     Units: mm/s^2
     Useful range: 1 to 10'000
 */
-#define ACCELERATION             6000
+#define ACCELERATION             2000
 
 /** \def ENDSTOP_CLEARANCE
 
@@ -155,7 +155,7 @@
   to ignore jerk on an axis, define it to twice the maximum feedrate of this
   axis.
 
-  Having these values too low results in more than neccessary slowdown at
+  Having these values too low results in more than necessary slowdown at
   movement crossings, but is otherwise harmless. Too high values can result
   in stepper motors suddenly stalling. If angles between movements in your
   G-code are small and your printer runs through entire curves full speed,
@@ -189,7 +189,7 @@
 
 /** \def MOTHERBOARD
  ***************MOTHERBOARD***************
- * Define this to use one of predefined configuratoins.
+ * Define this to use one of predefined configurations.
  **/
 //#define MOTHERBOARD 2
 #include "boards.h"
@@ -248,16 +248,87 @@
 #define E_INVERT_ENABLE
 */
 
+/** \def ENCODER_PIN
+ * ENCODER_PIN_A must be connected to INT1 pin for external interrupt to work!
+ * Motor encoder needs INT0 pin.
+ **/
 #define ENCODER_PIN_A PD3
 #define ENCODER_PIN_B PA4
 #define INVERT_DIRECTION_ENCODER
 
-#define PWR_OUT1_PIN 18
-#define PWR_OUT2_PIN 19
+/** \def PULSES_PER_TURN
+ * Motor encoder pulses per one machine shaft revolution. 
+ * If encoder wheel is mounted on motor pulley for better resolution,
+ * its gear ratio must be taken into account. Every change of square wave from encoder
+ * counts as one tick so number of pulses per wheel revolution equals to number of blades doubled.  
+ **/
+#define PULSES_PER_TURN 84
+
+/** \def MOTOR_SPEED
+ * Defines minimal and maximal functional speed of machine shaft in RPM
+  
+    Units: revolutions/min, stitches/min
+    Sane values: 50 to 1900
+    Valid range: 1 to 3000
+ **/
+#define MIN_MOTOR_SPEED 80
+#define MAX_MOTOR_SPEED 400
+
+/** \def KX_FACTOR
+ * Proportional and integral factor for speed controller. 
+ * True value of the factor equals to: value / POINT_SHIFT
+  
+    Sane values: 100 to 90000
+    Valid range: 1 to 900000
+ **/
+#define KP_FACTOR 40000
+#define KI_FACTOR 2000
+
+/** \def ACCUMULATOR_LIMIT
+ * Limits for integral part of the controller. Higher values mean that controller
+ * remebers more errors in past and might make it unstable on varying load and speed changes. 
+ * Don't exceed int 16 bit 32,768 value.
+    
+    Sane values: 100 to 9000
+    Valid range: 0 to 32768
+ **/
+#define ACCUMULATOR_LIMIT 4000
+
+/** \def POINT_SHIFT
+ * PI controller uses fixed point arithmetic, change number of ZEROS for better or worse accuracy.
+ * Default value is enough in most cases, bigger numbers might cause overflow.
+ 
+    Sane values: 100 to 100000
+    Valid range: 1 to 1000000
+ **/
+#define POINT_SHIFT 100000
+
+#define PWR_OUT1_PIN PD4
+#define PWR_OUT2_PIN PD5
 #define ANALOG_IN_PIN 33
 #define SWITCH1_PIN 34
 #define SWITCH2_PIN 35
 #define SWITCH3_PIN PD2
+
+/** \def MAX_JUMP_LENGTH
+ * This parameter tells motor speed planner to use lowest defined speed 
+ * for stitches of length close to this value.
+    
+    Units: mm
+    Sane values: 5 to 16
+    Valid range: 1 to 200
+ **/
+#define MAX_JUMP_LENGTH 12
+
+/** \def JUMP_MOTOR_SPEED_DIFF_MAX
+ * This parameter tells motor speed planner to try keep maximal possible 
+ * difference in speed between all jumps in range of this value.
+    
+    Units: rpm
+    Sane values: 50 to 400
+    Valid range: 1 to 2000
+ **/
+#define JUMP_MOTOR_SPEED_DIFF_MAX 100
 
 #endif
 

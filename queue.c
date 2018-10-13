@@ -46,6 +46,11 @@ uint8_t queue_empty() {
     return result;
 }
 
+uint8_t queue_current_size()
+{
+    return mb_tail > mb_head ? (MOVEBUFFER_SIZE - mb_tail + mb_head) : (mb_head - mb_tail);
+}
+
 DDA *queue_current_movement() {
   DDA* current;
 

@@ -57,5 +57,6 @@ void loop()
             }
         }
     }
+    update_dc_motor();
 } 
 #endif

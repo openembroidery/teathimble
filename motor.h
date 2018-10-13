@@ -162,6 +162,8 @@ typedef struct {
 	/// Endstop homing
 	uint8_t endstop_check; ///< Do we need to check endstops? 0x1=Check X, 0x2=Check Y, 0x4=Check Z
 	uint8_t endstop_stop_cond; ///< Endstop condition on which to stop motion: 0=Stop on detrigger, 1=Stop on trigger
+	
+  int16_t dc_motor_speed; /// speed change for spindle motor
 }__attribute__ ((__packed__)) DDA;
 
 /*

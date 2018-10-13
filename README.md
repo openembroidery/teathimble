@@ -1,5 +1,5 @@
 # Teathimble 
-Teathimble is a minimalistic firmware intended to control variety of stepper motor based machines. It runs on most AVR (so arduino as well) microcontrollers and fits into ATmega16 MCU, providing great base for many projects. Teathimble is a trimmed fork of [Teacup](https://github.com/Traumflug/Teacup_Firmware) - lean and efficient firmware for RepRap printers by Triffid Hunter, Traumflug, jakepoz, many others.
+Teathimble is a minimalistic firmware intended to control embroidery machines. It runs on most AVR (so arduino as well) microcontrollers and fits into ATmega32 MCU, providing great base for many projects. Teathimble is a trimmed fork of [Teacup](https://github.com/Traumflug/Teacup_Firmware) - lean and efficient firmware for RepRap printers by Triffid Hunter, Traumflug, jakepoz, many others.
 
 ## Features
 - Minimalistic code.
@@ -7,10 +7,11 @@ Teathimble is a minimalistic firmware intended to control variety of stepper mot
 - True acceleration, interrupt based, with look-ahead and jerk calculation planning.
 - Integer only math to save cpu cycles for performance boost.
 - Up to 4 axis in straight or coreXY kinematics scheme.
+- DC motor speed controller.
 - Decent performance: can run up to 48'000 evenly spaced steps/second on 20 MHz as mentioned by core developers.
 
 ## Work progress
-For coli winder machine check this [branch](https://gitlab.com/markol/Coil_winder). Current code is checked on custom made arduino-like board top on ATmega32 to control winder. It is just a matter of formality to port configurations on other avaiable boards. You might also need [this arduino core](https://github.com/MCUdude/MightyCore) to turn custom board into arduino compatible.
+For coil winder machine check this [branch](https://gitlab.com/markol/Coil_winder). Current code is checked on custom made arduino-like board top on ATmega32 to control [simple embroidery machine](https://gitlab.com/markol/embroiderino) and coils winder. It is just a matter of formality to port configurations on other available boards. You might also need [this arduino core](https://github.com/MCUdude/MightyCore) to turn custom board into arduino compatible.
 To run inside simple [simulator](https://reprap.org/wiki/SimulAVR) build project with enclosed makefile, this might be come in handy for development.
 
 ## Building
@@ -33,6 +34,7 @@ Code is written in pure C.
 |msg.c           | For numbers parsing.                                                                                                                   |
 |pinio.c         |  Initialize all I/O.                                                                                                                   |
 |queue.c         | The queue of moves received from the host.                                                                                             |
+|sensors_control.c| DC motor speed controller implementation and needle position detection and processing.                                                |
 |serial.c        | Serial buffers and communication management.                                                                                           |
 |teathimble.ino.c| Code starts here.                                                                                                                      |
 |teathimble.ino  | Same as above, allows firmware to be built in Arduino IDE.                                                                             |

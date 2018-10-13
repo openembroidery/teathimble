@@ -9,12 +9,13 @@
 #include    <math.h>
 
 #include    "maths.h"
-#include "kinematics.h"
+#include    "kinematics.h"
 #include    "timer.h"
 #include    "serial.h"
 #include    "queue.h"
 
 #include    "pinio.h"
+#include    "sensors_control.h"
 
 /*
     position tracking
@@ -140,12 +141,12 @@ void dda_create(DDA *dda, const TARGET *target) {
   axes_int32_t steps;
     uint32_t    distance, c_limit, c_limit_calc;
   uint8_t i;
+  static DDA* prev_dda = NULL;
   #ifdef LOOKAHEAD
   // Number the moves to identify them; allowed to overflow.
   static uint8_t idcnt = 0;
-  static DDA* prev_dda = NULL;
 
-  if ((prev_dda && prev_dda->done) || dda->waitfor)
+  if (prev_dda && prev_dda->done)
     prev_dda = NULL;
   #endif
 
@@ -394,24 +395,78 @@ void dda_create(DDA *dda, const TARGET *target) {
     if (DEBUG_DDA && (debug_flags & DEBUG_DDA))
         serial_writestr_P(PSTR("] }\n"));
 
+    // now prepare speed values for dc motor
+    if (dda->waitfor)
+    {
+		// calculate dc motor speed according to distance, is linear interpolation ok here?
+		int16_t dc_motor_speed = MIN_MOTOR_SPEED + ((MAX_MOTOR_SPEED - MIN_MOTOR_SPEED) * ((int32_t)(distance - MAX_JUMP_LENGTH*1000) / (1 - MAX_JUMP_LENGTH))) / 1000;
+		if(dc_motor_speed > MAX_MOTOR_SPEED) dc_motor_speed = MAX_MOTOR_SPEED;
+		else if(dc_motor_speed < MIN_MOTOR_SPEED) dc_motor_speed = MIN_MOTOR_SPEED;
+		
+		if(dc_motor_speed > 0)
+		{
+			if(prev_dda)
+			{
+				// start spinning motor slowly
+				if(prev_dda->dc_motor_speed == 0)
+					dc_motor_speed = MIN_MOTOR_SPEED;
+				// speed up, decrease current dda speed if needed
+				else if(dc_motor_speed - prev_dda->dc_motor_speed > JUMP_MOTOR_SPEED_DIFF_MAX )
+					dc_motor_speed = prev_dda->dc_motor_speed + JUMP_MOTOR_SPEED_DIFF_MAX;
+				// slow down, decrease previous dda speed if needed
+				else if(prev_dda->dc_motor_speed - dc_motor_speed > JUMP_MOTOR_SPEED_DIFF_MAX )
+					prev_dda->dc_motor_speed = dc_motor_speed + JUMP_MOTOR_SPEED_DIFF_MAX;
+			}
+			else // no previous movement, start slowly as well
+				dc_motor_speed = MIN_MOTOR_SPEED;
+		}
+		dda->dc_motor_speed = dc_motor_speed;
+	}
+	// other kind of movement requires motor to be stopped
+	else
+	{
+		dda->dc_motor_speed = 0;
+	}
+	// end of motor speed planner
+    
     // next dda starts where we finish
     memcpy(&startpoint, &dda->endpoint, sizeof(TARGET));
-  #ifdef LOOKAHEAD
     prev_dda = dda;
-  #endif
 }
 
 
 void dda_start(DDA *dda) {
     // called from interrupt context: keep it simple!
-   
+
+        // apply dc motor speed
+        uint8_t queue_elements = queue_current_size();
+        if(dda->dc_motor_speed == 0 ) 
+			stop_dc_motor();
+		else
+		{
+			// slow down on almost empty buffer
+			if(queue_elements < 4)
+			{
+				desired_speed = dda->dc_motor_speed / 2;
+				if(desired_speed < MIN_MOTOR_SPEED)
+					desired_speed = MIN_MOTOR_SPEED;
+			}
+			else // just use planned speed value from dda
+				desired_speed = dda->dc_motor_speed;
+		}
+			
         if (dda->endstop_check)
             endstops_on();
         #ifdef TRIGGERED_MOVEMENT
-        // if movement dda in not allowed yet
+        // if stepper movement dda is not allowed yet
         else if(dda->waitfor)
             return;
         #endif
+        
+        // buffer is empty, this is probably last move
+        if(queue_elements == 0) 
+            desired_speed = 0;
+
         
   if (DEBUG_DDA && (debug_flags & DEBUG_DDA))
     #ifdef STEPS_PER_M_Z
