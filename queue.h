@@ -42,5 +42,6 @@ inline void enqueue(const TARGET *t) {
 }
 
 void queue_wait();
+void queue_set_prev_dc_motor(int16_t);
 
 #endif  /* _QUEUE_H */

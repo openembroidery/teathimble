@@ -88,7 +88,7 @@
     Units: mm/s^2
     Useful range: 1 to 10'000
 */
-#define ACCELERATION             2000
+#define ACCELERATION             2500
 
 /** \def ENDSTOP_CLEARANCE
 
@@ -132,6 +132,7 @@
 
 /** \def TRIGGERED_MOVEMENT
  Define this to start new G1 movement only by external interrupt from additional sensor switch.
+ Always used in case of embroidery machines.
 */
 #define TRIGGERED_MOVEMENT
 
@@ -140,6 +141,7 @@
   Define this to enable look-ahead during *ramping* acceleration to smoothly
   transition between moves instead of performing a dead stop every move.
   Enabling look-ahead requires about 3600 bytes of flash memory.
+  Keep it disabled for embroidery.
 */
 //#define LOOKAHEAD
 
@@ -248,6 +250,13 @@
 #define E_INVERT_ENABLE
 */
 
+#define PWR_OUT1_PIN PD4
+#define PWR_OUT2_PIN PD5
+#define ANALOG_IN_PIN 33
+#define SWITCH1_PIN 34
+#define SWITCH2_PIN 35
+#define SWITCH3_PIN PD2
+
 /** \def ENCODER_PIN
  * ENCODER_PIN_A must be connected to INT1 pin for external interrupt to work!
  * Motor encoder needs INT0 pin.
@@ -255,6 +264,8 @@
 #define ENCODER_PIN_A PD3
 #define ENCODER_PIN_B PA4
 #define INVERT_DIRECTION_ENCODER
+
+#endif
 
 /** \def PULSES_PER_TURN
  * Motor encoder pulses per one machine shaft revolution. 
@@ -273,6 +284,7 @@
  **/
 #define MIN_MOTOR_SPEED 80
 #define MAX_MOTOR_SPEED 800
+#define DEFAULT_MOTOR_SPEED 500
 
 /** \def KX_FACTOR
  * Proportional and integral factor for speed controller. 
@@ -303,13 +315,6 @@
  **/
 #define POINT_SHIFT 100000
 
-#define PWR_OUT1_PIN PD4
-#define PWR_OUT2_PIN PD5
-#define ANALOG_IN_PIN 33
-#define SWITCH1_PIN 34
-#define SWITCH2_PIN 35
-#define SWITCH3_PIN PD2
-
 /** \def MAX_JUMP_LENGTH
  * This parameter tells motor speed planner to use lowest defined speed 
  * for stitches of length close to this value.
@@ -328,9 +333,9 @@
     Sane values: 50 to 400
     Valid range: 1 to 2000
  **/
-#define JUMP_MOTOR_SPEED_DIFF_MAX 100
+#define JUMP_MOTOR_SPEED_DIFF_MAX 80
+#define JUMP_MOTOR_SPEED_DIFF_MAX_SLOWDOWN 20
 
-#endif
 
 /** \def MOVEBUFFER_SIZE
   Move buffer size, in number of moves.

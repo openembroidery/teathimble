@@ -8,9 +8,9 @@ uint16_t motor_pulses = 0;
 int32_t ki, kp;
 int16_t error_speed_sum;
 int16_t desired_speed, error_speed;
-int16_t margin_max_speed = MAX_MOTOR_SPEED;
+int16_t margin_max_speed = DEFAULT_MOTOR_SPEED;
 
-// Init INT0 and INT1 interrupts for optical sensors, init pwm and timers for dc motor speed controller
+/// Init INT0 and INT1 interrupts for optical sensors, init pwm and timers for dc motor speed controller
 void sensing_init()
 {
 	PULL_OFF(PD2); 
@@ -86,6 +86,7 @@ void set_dc_motor_speed(int16_t value)
 	desired_speed = value;
 }
 
+/// sets machine maximal work speed
 void set_dc_motor_speed_margin(int16_t value)
 {
 	if (value <= MAX_MOTOR_SPEED)
@@ -99,7 +100,7 @@ void set_dc_motor_speed_margin(int16_t value)
 		margin_max_speed = MAX_MOTOR_SPEED;
 }
 
-// activates stop of the the motor on needle interrupt
+/// activates stop of the the motor on needle interrupt
 void stop_dc_motor()
 {
 	if(desired_speed == 0) return;
@@ -107,7 +108,7 @@ void stop_dc_motor()
 	stop_motor_flag = 1;
 }
 
-//PI control update procedure
+/// PI control update procedure
 void update_dc_motor()
 {
 	int16_t pwm_pulse;
@@ -153,7 +154,7 @@ void update_dc_motor()
    }
 }
  
-// needle interrupt
+/// needle interrupt
 ISR(INT1_vect)
 {
 	// check if second sensor is trigged to estimate needle direction
@@ -186,13 +187,13 @@ ISR(INT1_vect)
 	}
 }
 
-// motor rotary encoder interrupt for speed measurement
+/// motor rotary encoder interrupt for speed measurement
 ISR(INT0_vect) 
 { 
 	++motor_pulses;
 }
  
-// timer tick interrupt
+/// timer tick interrupt
 ISR(TIMER2_OVF_vect) 
 {
 	++interrupt_ticks;

@@ -179,5 +179,21 @@ void queue_wait() {
   }
 }
 
+/// sets dc motor speed in all previous blocks if it is too high
+#define MB_PREV(x) ((x) == 0 ? MOVEBUFFER_SIZE -1 : (x) - 1)
+void queue_set_prev_dc_motor(int16_t speed)
+{
+    int8_t i = (mb_head);
+    int8_t end = MB_PREV(mb_tail);
+    while (i != end){
+        speed += JUMP_MOTOR_SPEED_DIFF_MAX_SLOWDOWN;
+        if (movebuffer[i].dc_motor_speed <= speed)
+            break;
+        //sersendf_P(PSTR("Old/new: %d/%d\n"), movebuffer[i].dc_motor_speed, speed);
+        movebuffer[i].dc_motor_speed = speed;
+        i = MB_PREV(i);
+    }
+}
+
 
 

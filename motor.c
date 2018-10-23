@@ -416,8 +416,8 @@ void dda_create(DDA *dda, const TARGET *target) {
 				else if(dc_motor_speed - prev_dda->dc_motor_speed > JUMP_MOTOR_SPEED_DIFF_MAX )
 					dc_motor_speed = prev_dda->dc_motor_speed + JUMP_MOTOR_SPEED_DIFF_MAX;
 				// slow down, decrease previous dda speed if needed
-				else if(prev_dda->dc_motor_speed - dc_motor_speed > JUMP_MOTOR_SPEED_DIFF_MAX )
-					prev_dda->dc_motor_speed = dc_motor_speed + JUMP_MOTOR_SPEED_DIFF_MAX;
+				else if(prev_dda->dc_motor_speed - dc_motor_speed > JUMP_MOTOR_SPEED_DIFF_MAX_SLOWDOWN )
+					queue_set_prev_dc_motor(dc_motor_speed);
 			}
 			else // no previous movement, start slowly as well
 				dc_motor_speed = MIN_MOTOR_SPEED;
@@ -428,6 +428,7 @@ void dda_create(DDA *dda, const TARGET *target) {
 	else
 	{
 		dda->dc_motor_speed = 0;
+		queue_set_prev_dc_motor(MIN_MOTOR_SPEED);
 	}
 	// end of motor speed planner
     
@@ -444,7 +445,7 @@ void dda_start(DDA *dda) {
         uint8_t queue_elements = queue_current_size();
         if(dda->dc_motor_speed == 0 )
         { 
-			// turn off motor for jump move
+			// turn off motor now for jump move
 			if (dda->waitfor == 0)
 				desired_speed = 0;
 			else
