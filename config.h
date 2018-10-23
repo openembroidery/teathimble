@@ -272,7 +272,7 @@
     Valid range: 1 to 3000
  **/
 #define MIN_MOTOR_SPEED 80
-#define MAX_MOTOR_SPEED 400
+#define MAX_MOTOR_SPEED 800
 
 /** \def KX_FACTOR
  * Proportional and integral factor for speed controller. 

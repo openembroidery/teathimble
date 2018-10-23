@@ -285,10 +285,12 @@ void dda_create(DDA *dda, const TARGET *target) {
     if (DEBUG_DDA && (debug_flags & DEBUG_DDA))
         sersendf_P(PSTR(" [ts:%lu"), dda->total_steps);
 
-    if (dda->total_steps == 0) {
-        dda->nullmove = 1;
-    }
-    else {
+    // null moves should be accepted anyway
+    //if (dda->total_steps == 0) {
+    //    dda->nullmove = 1;
+    //}
+    //else 
+    {
         // get steppers ready to go
         //power_on();
         stepper_enable();
@@ -399,8 +401,8 @@ void dda_create(DDA *dda, const TARGET *target) {
     if (dda->waitfor)
     {
 		// calculate dc motor speed according to distance, is linear interpolation ok here?
-		int16_t dc_motor_speed = MIN_MOTOR_SPEED + ((MAX_MOTOR_SPEED - MIN_MOTOR_SPEED) * ((int32_t)(distance - MAX_JUMP_LENGTH*1000) / (1 - MAX_JUMP_LENGTH))) / 1000;
-		if(dc_motor_speed > MAX_MOTOR_SPEED) dc_motor_speed = MAX_MOTOR_SPEED;
+		int16_t dc_motor_speed = MIN_MOTOR_SPEED + ((margin_max_speed - MIN_MOTOR_SPEED) * ((int32_t)(distance - MAX_JUMP_LENGTH * 1000) / (1 - MAX_JUMP_LENGTH))) / 1000;
+		if(dc_motor_speed > margin_max_speed) dc_motor_speed = margin_max_speed;
 		else if(dc_motor_speed < MIN_MOTOR_SPEED) dc_motor_speed = MIN_MOTOR_SPEED;
 		
 		if(dc_motor_speed > 0)
@@ -440,8 +442,14 @@ void dda_start(DDA *dda) {
 
         // apply dc motor speed
         uint8_t queue_elements = queue_current_size();
-        if(dda->dc_motor_speed == 0 ) 
-			stop_dc_motor();
+        if(dda->dc_motor_speed == 0 )
+        { 
+			// turn off motor for jump move
+			if (dda->waitfor == 0)
+				desired_speed = 0;
+			else
+				stop_dc_motor();
+		}
 		else
 		{
 			// slow down on almost empty buffer

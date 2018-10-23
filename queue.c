@@ -56,7 +56,7 @@ DDA *queue_current_movement() {
 
   ATOMIC_START
     current = &movebuffer[mb_tail];
-
+    
     if ( ! current->live || current->waitfor || current->nullmove)
       current = NULL;
   ATOMIC_END

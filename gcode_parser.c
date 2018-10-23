@@ -9,7 +9,7 @@
 GCODE_PARAM BSS gcode_params[8];
 static volatile uint8_t current_parameter = 0;
 uint8_t option_all_relative = 0;
-int16_t speed_limit = 0;
+int16_t parameter_1 = 0;
 TARGET BSS next_target;
 
 // Parser is implemented as a finite state automata (DFA)
@@ -95,7 +95,7 @@ uint8_t process_command()
                 next_target.F = decfloat_to_int(gcode_params[i].value, gcode_params[i].exponent, gcode_params[i].is_negative, 1);
             break;
             case 'S':
-               speed_limit = decfloat_to_int(gcode_params[i].value, gcode_params[i].exponent, gcode_params[i].is_negative, 1);
+               parameter_1 = decfloat_to_int(gcode_params[i].value, gcode_params[i].exponent, gcode_params[i].is_negative, 1);
             break;
         }
     }
@@ -207,10 +207,15 @@ uint8_t process_command()
                     serial_writestr_P(PSTR("\n"));
                     endstops_off();
                 break;
-                case 202: //set acceleration
+                
+                case 202:
+                    //set acceleration not supported
                 break;
-                case 222: //set speed
-                    desired_speed = speed_limit;
+                case 222:
+                    //? Example: M222 S400
+                    //?
+                    //? Set dc motor max speed
+                    set_dc_motor_speed_margin(parameter_1);
                 break;
                 default:
                     result = STATE_ERROR;

@@ -8,6 +8,7 @@ uint16_t motor_pulses = 0;
 int32_t ki, kp;
 int16_t error_speed_sum;
 int16_t desired_speed, error_speed;
+int16_t margin_max_speed = MAX_MOTOR_SPEED;
 
 // Init INT0 and INT1 interrupts for optical sensors, init pwm and timers for dc motor speed controller
 void sensing_init()
@@ -83,6 +84,19 @@ void sensing_init()
 void set_dc_motor_speed(int16_t value)
 {
 	desired_speed = value;
+}
+
+void set_dc_motor_speed_margin(int16_t value)
+{
+	if (value <= MAX_MOTOR_SPEED)
+	{
+		if (value >= MIN_MOTOR_SPEED)
+			margin_max_speed = value;
+		else
+			margin_max_speed = MIN_MOTOR_SPEED;
+	}
+	else 
+		margin_max_speed = MAX_MOTOR_SPEED;
 }
 
 // activates stop of the the motor on needle interrupt
