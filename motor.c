@@ -400,8 +400,17 @@ void dda_create(DDA *dda, const TARGET *target) {
     // now prepare speed values for dc motor
     if (dda->waitfor)
     {
-		// calculate dc motor speed according to distance, is linear interpolation ok here?
-		int16_t dc_motor_speed = MIN_MOTOR_SPEED + ((margin_max_speed - MIN_MOTOR_SPEED) * ((int32_t)(distance - MAX_JUMP_LENGTH * 1000) / (1 - MAX_JUMP_LENGTH))) / 1000;
+        // calculate dc motor speed according to distance, 
+        // this is done by linear interpolation of speed curve divided into two line intervals
+        #define MAX_JUMP_LENGTH_JOINT MAX_JUMP_LENGTH/4
+        int16_t dc_motor_speed;
+        int16_t half_margin_max_speed = margin_max_speed/2;
+        if (distance < MAX_JUMP_LENGTH_JOINT * 1000)
+            // small distances has a steep speed curve
+            dc_motor_speed = half_margin_max_speed + ((margin_max_speed - half_margin_max_speed) * ((int32_t)(distance - MAX_JUMP_LENGTH_JOINT * 1000) / (0 - MAX_JUMP_LENGTH_JOINT))) / 1000;
+        else
+            // longer distances curve looks more like a horizontal line
+            dc_motor_speed = MIN_MOTOR_SPEED + ((half_margin_max_speed - MIN_MOTOR_SPEED) * ((int32_t)(distance - MAX_JUMP_LENGTH * 1000) / (MAX_JUMP_LENGTH_JOINT - MAX_JUMP_LENGTH))) / 1000;
 		if(dc_motor_speed > margin_max_speed) dc_motor_speed = margin_max_speed;
 		else if(dc_motor_speed < MIN_MOTOR_SPEED) dc_motor_speed = MIN_MOTOR_SPEED;
 		
