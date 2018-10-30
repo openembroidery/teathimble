@@ -100,12 +100,21 @@ void set_dc_motor_speed_margin(int16_t value)
 		margin_max_speed = MAX_MOTOR_SPEED;
 }
 
-/// activates stop of the the motor on needle interrupt
-void stop_dc_motor()
+/// activates stop of the the motor on needle downwards interrupt
+/// mode 0 - stop on first interrupt, any other value - stop on next one interrupt
+void stop_dc_motor(uint8_t mode)
 {
-	if(desired_speed == 0) return;
-	desired_speed = MIN_MOTOR_SPEED;
-	stop_motor_flag = 1;
+    if (stop_motor_flag || desired_speed == 0) return;
+    if (mode)
+    {
+        desired_speed = MIN_MOTOR_SPEED;
+        stop_motor_flag = 2;
+    }
+    else
+    {
+        desired_speed = MIN_MOTOR_SPEED/2;
+        stop_motor_flag = 1;
+    }
 }
 
 /// PI control update procedure
@@ -164,26 +173,37 @@ ISR(INT1_vect)
 		if(last_direction)
 			return;
 		last_direction = 1;
-		if(stop_motor_flag)
-		{
-			desired_speed = 0;
-			stop_motor_flag = 0;
-		}
-		//serial_writestr_P(PSTR("int1 up\n"));
-		if(mb_tail_dda && !mb_tail_dda->live)
+        if(stop_motor_flag == 2)
+        {
+            --stop_motor_flag;
+            desired_speed = MIN_MOTOR_SPEED/2;
+        }
+		if(mb_tail_dda && !mb_tail_dda->live && !stop_motor_flag)
 		{
 			mb_tail_dda->waitfor = 0;
 			dda_start(mb_tail_dda);
 			sei();
 		}
+        //serial_writestr_P(PSTR("int1 up\n"));
 	}
 	else // needle goes downwards
 	{
 		if(!last_direction)
 			return;
-		//serial_writestr_P(PSTR("int1 down\n"));
 		last_direction = 0;
 		//TODO: stop any movement currently in progress
+		if(stop_motor_flag == 1)
+		{
+			desired_speed = 0;
+			stop_motor_flag = 0;
+            if(mb_tail_dda && !mb_tail_dda->live)
+            {
+                mb_tail_dda->waitfor = 0;
+                dda_start(mb_tail_dda);
+                sei();
+            }
+		}
+        //serial_writestr_P(PSTR("int1 down\n"));
 	}
 }
 

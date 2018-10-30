@@ -454,20 +454,26 @@ void dda_start(DDA *dda) {
         uint8_t queue_elements = queue_current_size();
         if(dda->dc_motor_speed == 0 )
         { 
-			// turn off motor now for jump move
-			if (dda->waitfor == 0)
-				desired_speed = 0;
-			else
-				stop_dc_motor();
+			// turn off motor for jump move after current one stitch
+			if (desired_speed > 0)
+            {
+				stop_dc_motor(1);
+                dda->waitfor = 1;
+            }
 		}
 		else
 		{
 			// slow down on almost empty buffer
 			if(queue_elements < 4)
 			{
-				desired_speed = dda->dc_motor_speed / 2;
-				if(desired_speed < MIN_MOTOR_SPEED)
-					desired_speed = MIN_MOTOR_SPEED;
+                if(queue_elements < 2)
+                    desired_speed = MIN_MOTOR_SPEED;
+                else
+                {
+                    desired_speed = dda->dc_motor_speed / 2;
+                    if(desired_speed < MIN_MOTOR_SPEED)
+                        desired_speed = MIN_MOTOR_SPEED;
+                }
 			}
 			else // just use planned speed value from dda
 				desired_speed = dda->dc_motor_speed;
@@ -481,10 +487,9 @@ void dda_start(DDA *dda) {
             return;
         #endif
         
-        // buffer is empty, this is probably last move
+        // buffer is empty, this is probably last move, stop now
         if(queue_elements == 0) 
-            desired_speed = 0;
-
+            stop_dc_motor(0);
         
   if (DEBUG_DDA && (debug_flags & DEBUG_DDA))
     #ifdef STEPS_PER_M_Z

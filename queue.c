@@ -111,11 +111,11 @@ void enqueue_home(TARGET const *t, uint8_t endstop_check, uint8_t endstop_stop_c
   new_movebuffer->endstop_check = endstop_check;
   new_movebuffer->endstop_stop_cond = endstop_stop_cond;
   #ifdef TRIGGERED_MOVEMENT
-  // this dda is started by interrupt
+  // this dda is started by external interrupt
   if(endstop_stop_cond & 0xf0)
-  {
      new_movebuffer->waitfor = 1;
-  }
+  else
+     new_movebuffer->waitfor = 0;
   #endif
   dda_create(new_movebuffer, t);
 
