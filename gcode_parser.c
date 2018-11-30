@@ -9,7 +9,9 @@
 GCODE_PARAM BSS gcode_params[8];
 static volatile uint8_t current_parameter = 0;
 uint8_t option_all_relative = 0;
-int16_t parameter_1 = 0;
+int16_t parameter_0 = -1;
+int32_t parameter_1 = -1, parameter_2 = -1;
+
 TARGET BSS next_target;
 
 // Parser is implemented as a finite state automata (DFA)
@@ -95,7 +97,13 @@ uint8_t process_command()
                 next_target.F = decfloat_to_int(gcode_params[i].value, gcode_params[i].exponent, gcode_params[i].is_negative, 1);
             break;
             case 'S':
+               parameter_0 = decfloat_to_int(gcode_params[i].value, gcode_params[i].exponent, gcode_params[i].is_negative, 1);
+            break;
+            case 'P':
                parameter_1 = decfloat_to_int(gcode_params[i].value, gcode_params[i].exponent, gcode_params[i].is_negative, 1);
+            break;
+            case 'I':
+               parameter_2 = decfloat_to_int(gcode_params[i].value, gcode_params[i].exponent, gcode_params[i].is_negative, 1);
             break;
         }
     }
@@ -150,6 +158,7 @@ uint8_t process_command()
                     //? Example: M0
                     //?
                     //? Stop or unconditional stop
+                    desired_speed = 0;
                     ATOMIC_START
                     dda = queue_current_movement();
                     if (dda != NULL)
@@ -175,6 +184,7 @@ uint8_t process_command()
                     //? restart is to press the reset button on the master microcontroller.
                     //? See also M0.
                     //?
+                    desired_speed = 0;
                     timer_stop();
                     queue_flush();
                     cli();
@@ -215,7 +225,21 @@ uint8_t process_command()
                     //? Example: M222 S400
                     //?
                     //? Set dc motor max speed
-                    set_dc_motor_speed_margin(parameter_1);
+                    set_dc_motor_speed_margin(parameter_0);
+                    parameter_0 = -1;
+                break;
+                case 301:
+                    //? Example: M301 S0 P40000 I2000
+                    //?
+                    //? Set dc motor kP and kI controller parameters, S is a speed
+                    if(parameter_0 >= 0)
+                        desired_speed = parameter_0;
+                    if(parameter_1 >= 0)
+                        kp = parameter_1;
+                    if(parameter_2 >= 0)
+                        ki = parameter_2;
+                    sersendf_P(PSTR("S:%d,P:%ld,I:%ld\n"),
+                        desired_speed, kp, ki);
                 break;
                 default:
                     result = STATE_ERROR;

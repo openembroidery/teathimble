@@ -23,7 +23,7 @@
 #define KINEMATICS_COREXY
 
 
-/** \def X_MIN X_MAX Y_MIN Y_MAX Z_MIN Z_MAX
+/** \def X_MIN X_MAX Y_MIN Y_MAX
   Soft axis limits. Define them to your machine's size relative to what your
   G-code considers to be the origin.
 
@@ -44,11 +44,8 @@
 #define Y_MIN                    0.0
 #define Y_MAX                    280.0
 
-//#define Z_MIN                    0.0
-//#define Z_MAX                    140.0
 
-
-/** \def STEPS_PER_M_X STEPS_PER_M_Y STEPS_PER_M_Z STEPS_PER_M_E
+/** \def STEPS_PER_M_X STEPS_PER_M_Y
   Steps per meter ( = steps per mm * 1000 ), calculate these values
   appropriate for your machine.
 
@@ -61,25 +58,20 @@
   **/
 #define STEPS_PER_M_X            87575
 #define STEPS_PER_M_Y            87575
-/*#define STEPS_PER_M_Z            1280000
-#define STEPS_PER_M_E            96271
-*/
-/** \def SEARCH_FEEDRATE_X SEARCH_FEEDRATE_Y SEARCH_FEEDRATE_Z
+
+/** \def SEARCH_FEEDRATE_X SEARCH_FEEDRATE_Y
   Used when doing precision endstop search and as default feedrate. 
   (mm / min)  60 mm / min = 1 mm/sec
 */
 #define SEARCH_FEEDRATE_X        10000
 #define SEARCH_FEEDRATE_Y        10000
-//#define SEARCH_FEEDRATE_Z        400
 
-/** \def MAXIMUM_FEEDRATE_X MAXIMUM_FEEDRATE_Y MAXIMUM_FEEDRATE_Z MAXIMUM_FEEDRATE_E
+/** \def MAXIMUM_FEEDRATE_X MAXIMUM_FEEDRATE_Y
   Used for G0 rapid moves and as a cap for all other feedrates. (mm / min) 
 */
 #define MAXIMUM_FEEDRATE_X       33000
 #define MAXIMUM_FEEDRATE_Y       33000
-/*#define MAXIMUM_FEEDRATE_Z       6000
-#define MAXIMUM_FEEDRATE_E       20000
-*/
+
 /** \def ACCELERATION
   How fast to accelerate when using ACCELERATION_RAMPING. Start with 10 for
   milling (high precision) or 1000 for printing.
@@ -145,7 +137,8 @@
 */
 //#define LOOKAHEAD
 
-/** \def MAX_JERK_X MAX_JERK_Y MAX_JERK_Z MAX_JERK_E
+/** \def MAX_JERK_X MAX_JERK_Y
+  Not used for embroidery, with lookahead disabled. 
   When performing look-ahead, we need to decide what an acceptable jerk to the
   mechanics is. Look-ahead attempts to instantly change direction at movement
   crossings, which means instant changes in the speed of the axes participating
@@ -169,8 +162,6 @@
 */
 #define MAX_JERK_X               400
 #define MAX_JERK_Y               400
-/*#define MAX_JERK_Z               0
-#define MAX_JERK_E               200*/
 
 
 /** \def BAUD
@@ -202,70 +193,50 @@
  * Here you can setup pin functions, depending on board configuration. 
  * Comment board define above to enable this customizable config.
  **/
-
 #ifndef MOTHERBOARD
 #define MOTHERBOARD
+
+// X AXIS
 #define X_STEP_PIN               PC3
-// 19 PC3
 #define X_DIR_PIN                PC2
-// 18 PC2
-#define X_MIN_PIN                PA5
-//35 PA5
-//#define X_MAX_PIN                DIO2
+//#define X_MIN_PIN                PA5
+#define X_MAX_PIN                PA5
 #define X_ENABLE_PIN             PC4
-// 20 PC4
+
 #define X_INVERT_DIR
 #define X_INVERT_MIN
 #define X_INVERT_MAX
 #define X_INVERT_ENABLE
 
+// Y AXIS
 #define Y_STEP_PIN               DIO9
-//22 PC6
 #define Y_DIR_PIN                PC5
-//21 PC5
-// 16 PD2
-#define Y_MIN_PIN                PA6
-//#define Y_MAX_PIN                DIO7
+//#define Y_MIN_PIN                PA6
+#define Y_MAX_PIN                PA6
 #define Y_ENABLE_PIN             DIO10
-//23 PC7
+
 #define Y_INVERT_DIR
 #define Y_INVERT_MIN
 #define Y_INVERT_MAX
 #define Y_INVERT_ENABLE
 
-/*#define Z_STEP_PIN               DIO11
-#define Z_DIR_PIN                DIO12
-#define Z_MIN_PIN                DIO13
-#define Z_MAX_PIN                DIO14
-#define Z_ENABLE_PIN             DIO15
-#define Z_INVERT_DIR
-#define Z_INVERT_MIN
-#define Z_INVERT_MAX
-#define Z_INVERT_ENABLE
-
-#define E_STEP_PIN               DIO23
-#define E_DIR_PIN                DIO0
-#define E_ENABLE_PIN             DIO22
-#define E_INVERT_DIR
-#define E_INVERT_ENABLE
-*/
-
-#define PWR_OUT1_PIN PD4
-#define PWR_OUT2_PIN PD5
-#define ANALOG_IN_PIN 33
-#define SWITCH1_PIN 34
-#define SWITCH2_PIN 35
-#define SWITCH3_PIN PD2
 
 /** \def ENCODER_PIN
- * ENCODER_PIN_A must be connected to INT1 pin for external interrupt to work!
+ * ENCODER_PIN_A must be INT1 digital pin for external interrupt to work!
  * Motor encoder needs INT0 pin.
  **/
 #define ENCODER_PIN_A PD3
 #define ENCODER_PIN_B PA4
+
+/** \def INVERT_DIRECTION_ENCODER
+ * Enable or disable these if the steppers movement is triggered when 
+ * the needle moves downwards instead of when upwards.
+ **/
 #define INVERT_DIRECTION_ENCODER
 
 #endif
+
+//#define FAST_PWM
 
 /** \def PULSES_PER_TURN
  * Motor encoder pulses per one machine shaft revolution. 
@@ -323,7 +294,7 @@
     Sane values: 5 to 16
     Valid range: 1 to 200
  **/
-#define MAX_JUMP_LENGTH 12
+#define MAX_JUMP_LENGTH 16
 
 /** \def JUMP_MOTOR_SPEED_DIFF_MAX
  * This parameter tells motor speed planner to try keep maximal possible 

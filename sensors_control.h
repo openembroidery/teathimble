@@ -12,6 +12,7 @@
 
 extern int16_t desired_speed;
 extern int16_t margin_max_speed;
+extern int32_t kp, ki;
 void stop_dc_motor(uint8_t);
 
 #ifdef __cplusplus

@@ -19,6 +19,23 @@ Most of the configuration is described and is in *config.h* file.
 To disable simulavr info sections, launch make with variable set `SIMULFLAGS= ` 
 Example command for flashing Arduino UNO: `make flash MCU=atmega328p SIMULFLAGS= UPLOAD_PORT=/dev/ttyACM0`, assuming that configuration is complete. Makefile contains paths configuration to arduino core or mighty core, they need to be set up correctly. Project does not use arduino libraries at all, it is just compatible with Arduio IDE which should be capable of whole compilation and memory programming task, just open the *.ino* file.
 
+## List of supported G-codes
+For now parser is kept simple and not so proof for sophisticated errors in code syntax.
+
+- **G0 X? Y? F?** - liner move - jump, F is an feedrate
+- **G1 X? Y? F?** - linear move - stitch
+- **G28** - home axes
+- **G90** - set to absolute positioning
+- **G91** - set to relative positioning
+- **M0** - unconditional stop of all movement in progress
+- **M112** - kill, stops everything and requires reset
+- **M114** - get current position info
+- **M119** - get endstop triggers status
+- **M222 S?** - sets the motor max speed limit in SPM
+- **M301 S? P? I?** - set the kP and kI values, S sets the current motor speed for tuning purposes
+
+
+
 ## Source files description
 Code is written in pure C.
 
