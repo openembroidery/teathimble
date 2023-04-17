@@ -128,9 +128,9 @@ static void set_direction(DDA *dda, uint8_t n, int32_t delta) {
 */
 static int8_t get_direction(DDA *dda, uint8_t n) {
   if ((n == X && dda->x_direction) ||
-      (n == Y && dda->y_direction) 
+      (n == Y && dda->y_direction)
 #ifdef STEPS_PER_M_Z
-      || (n == Z && dda->z_direction) 
+      || (n == Z && dda->z_direction)
 #endif
 #ifdef STEPS_PER_M_E
       || (n == E && dda->e_direction)
@@ -166,7 +166,7 @@ void dda_create(DDA *dda, const TARGET *target) {
     sersendf_P(PSTR("\nCreate: X %lq  Y %lq  F %lu\n"),
                dda->endpoint.axis[X], dda->endpoint.axis[Y], dda->endpoint.F );
 #endif
-             
+
 
   // Apply feedrate multiplier.
   if (dda->endpoint.f_multiplier != 256) {
@@ -262,7 +262,7 @@ void dda_create(DDA *dda, const TARGET *target) {
     sersendf_P(PSTR("[%ld,%ld,%ld,%ld]"),
                target->axis[X] - startpoint.axis[X], target->axis[Y] - startpoint.axis[Y],
              #ifdef STEPS_PER_M_Z
-               target->axis[Z] - startpoint.axis[Z], 
+               target->axis[Z] - startpoint.axis[Z],
              #else
                0,
              #endif
@@ -294,7 +294,7 @@ void dda_create(DDA *dda, const TARGET *target) {
     //if (dda->total_steps == 0) {
     //    dda->nullmove = 1;
     //}
-    //else 
+    //else
     {
         // get steppers ready to go
         //power_on();
@@ -405,7 +405,7 @@ void dda_create(DDA *dda, const TARGET *target) {
     // now prepare speed values for dc motor
     if (dda->waitfor)
     {
-        // calculate dc motor speed according to distance, 
+        // calculate dc motor speed according to distance,
         // this is done by linear interpolation of speed curve divided into two line intervals
         #define MAX_JUMP_LENGTH_JOINT MAX_JUMP_LENGTH/4
         int16_t dc_motor_speed;
@@ -418,7 +418,7 @@ void dda_create(DDA *dda, const TARGET *target) {
             dc_motor_speed = MIN_MOTOR_SPEED + ((half_margin_max_speed - MIN_MOTOR_SPEED) * ((int32_t)(distance - MAX_JUMP_LENGTH * 1000) / (MAX_JUMP_LENGTH_JOINT - MAX_JUMP_LENGTH))) / 1000;
 		if(dc_motor_speed > margin_max_speed) dc_motor_speed = margin_max_speed;
 		else if(dc_motor_speed < MIN_MOTOR_SPEED) dc_motor_speed = MIN_MOTOR_SPEED;
-		
+
 		if(dc_motor_speed > 0)
 		{
 			if(prev_dda)
@@ -445,11 +445,9 @@ void dda_create(DDA *dda, const TARGET *target) {
 		queue_set_prev_dc_motor(MIN_MOTOR_SPEED);
 	}
 	// end of motor speed planner
-    
+
     // next dda starts where we finish
-    sersendf_P(PSTR("startpoint_x_old:%lu\n"), startpoint.axis[X]);
     memcpy(&startpoint, &dda->endpoint, sizeof(TARGET));
-    sersendf_P(PSTR("startpoint_x_new:%lu\n"), startpoint.axis[X]);
     prev_dda = dda;
 }
 
@@ -460,7 +458,7 @@ void dda_start(DDA *dda) {
         // apply dc motor speed
         uint8_t queue_elements = queue_current_size();
         if(dda->dc_motor_speed == 0 )
-        { 
+        {
 			// turn off motor for jump move after current one stitch
 			if (desired_speed > 0)
             {
@@ -485,7 +483,7 @@ void dda_start(DDA *dda) {
 			else // just use planned speed value from dda
 				desired_speed = dda->dc_motor_speed;
 		}
-			
+
         if (dda->endstop_check)
             endstops_on();
         #ifdef TRIGGERED_MOVEMENT
@@ -493,24 +491,24 @@ void dda_start(DDA *dda) {
         else if(dda->waitfor)
             return;
         #endif
-        
+
         // buffer is empty, this is probably last move, stop now
-        if(queue_elements == 0) 
+        if(queue_elements == 0)
             stop_dc_motor(0);
-        
+
   if (DEBUG_DDA && (debug_flags & DEBUG_DDA))
     #ifdef STEPS_PER_M_Z
         sersendf_P(PSTR("Start: X %lq  Y %lq  Z %lq  F %lu\n"),
                dda->endpoint.axis[X], dda->endpoint.axis[Y],
-               dda->endpoint.axis[Z], dda->endpoint.F);        
+               dda->endpoint.axis[Z], dda->endpoint.F);
     #else
         sersendf_P(PSTR("Start: X %lq  Y %lq  F %lu\n"),
-               dda->endpoint.axis[X], dda->endpoint.axis[Y],dda->endpoint.F);        
+               dda->endpoint.axis[X], dda->endpoint.axis[Y],dda->endpoint.F);
     #endif
-    
+
         // get ready to go
         //psu_timeout = 0;
-        
+
         // set direction outputs
         x_direction(dda->x_direction);
         y_direction(dda->y_direction);
@@ -520,24 +518,24 @@ void dda_start(DDA *dda) {
         #ifdef STEPS_PER_M_E
         e_direction(dda->e_direction);
         #endif
-        
+
         // initialise state variable
-        move_state.counter[X] = move_state.counter[Y] =  
+        move_state.counter[X] = move_state.counter[Y] =
         #ifdef STEPS_PER_M_Z
-        move_state.counter[Z] = 
+        move_state.counter[Z] =
         #endif
         #ifdef STEPS_PER_M_E
-        move_state.counter[E] = 
+        move_state.counter[E] =
         #endif
         -(dda->total_steps >> 1);
         memcpy(&move_state.steps[X], &dda->delta[X], sizeof(uint32_t) * 4);
         move_state.endstop_stop = 0;
-        
+
         move_state.step_no = 0;
-        
+
         // ensure this dda starts
         dda->live = 1;
-        
+
         // set timeout for first step
         timer_set(dda->c, 0);
     // else just a speed change, keep dda->live = 0
@@ -592,9 +590,9 @@ if (move_state.steps[E]) {
   //
   // TODO: with ACCELERATION_TEMPORAL this duplicates some code. See where
   //       dda->live is zero'd, about 10 lines above.
-  if ((move_state.steps[X] == 0 && move_state.steps[Y] == 0 
-    #ifdef STEPS_PER_M_Z 
-        && move_state.steps[Z] == 0 
+  if ((move_state.steps[X] == 0 && move_state.steps[Y] == 0
+    #ifdef STEPS_PER_M_Z
+        && move_state.steps[Z] == 0
     #endif
     #ifdef STEPS_PER_M_E
         && move_state.steps[E] == 0
@@ -688,7 +686,7 @@ void dda_clock() {
       endstop_trigger = move_state.debounce_count_y >= ENDSTOP_STEPS;
     }
     #endif
-   
+
 
     // If an endstop is definitely triggered, stop the movement.
     if (endstop_trigger) {
@@ -713,7 +711,7 @@ void dda_clock() {
       #else
         dda->live = 0;
       #endif
-        
+
       endstops_off();
     }
   } /* ! move_state.endstop_stop */
@@ -762,7 +760,7 @@ void dda_clock() {
       if (move_c < dda->c_min) {
         // We hit max speed not always exactly.
         move_c = dda->c_min;
-        
+
         // This is a hack which deals with movements with an unknown number of
         // acceleration steps. dda_create() sets a very high number, then,
         // but we don't want to re-calculate all the time.
@@ -783,7 +781,7 @@ void dda_clock() {
           In case such a change happened, values in the new dda are more
           recent than our calculation here, anyways.
         */
-      
+
         if (current_id == dda->id) {
           dda->c = move_c;
           dda->n = move_n;
@@ -795,11 +793,11 @@ void dda_clock() {
         if (current_id == dda->id)
           // This happens only when !recalc_speed, meaning we are cruising, not
           // accelerating or decelerating. So it pegs our dda->c at c_min if it
-          // never made it as far as c_min. 
+          // never made it as far as c_min.
           dda->c = dda->c_min;
       ATOMIC_END
     }
-} 
+}
 
 /// update global current_position struct
 void update_current_position() {
