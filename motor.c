@@ -27,7 +27,12 @@ TARGET BSS startpoint;
 
 /// \var startpoint_steps
 /// \brief target position of last move in queue, expressed in steps
+#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega328__) || \
+    defined (__AVR_ATmega328P__)
+TARGET startpoint_steps;
+#else
 TARGET BSS startpoint_steps;
+#endif
 
 /// \var steps_per_m_P
 /// \brief motor steps required to advance one meter on each axis
@@ -442,7 +447,9 @@ void dda_create(DDA *dda, const TARGET *target) {
 	// end of motor speed planner
     
     // next dda starts where we finish
+    sersendf_P(PSTR("startpoint_x_old:%lu\n"), startpoint.axis[X]);
     memcpy(&startpoint, &dda->endpoint, sizeof(TARGET));
+    sersendf_P(PSTR("startpoint_x_new:%lu\n"), startpoint.axis[X]);
     prev_dda = dda;
 }
 
